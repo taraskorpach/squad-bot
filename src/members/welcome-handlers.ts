@@ -1,6 +1,6 @@
 import { Composer } from 'grammy';
 import type { BotContext } from '../context';
-import { HI_CALLBACK, isInChat } from '../telegram';
+import { HI_CALLBACK, isAdmin, isInChat } from '../telegram';
 import { texts } from '../texts';
 import { welcomeMessage } from '../welcome';
 
@@ -11,7 +11,7 @@ export const welcoming = new Composer<BotContext>();
 welcoming.on('my_chat_member', async (ctx) => {
 	const { old_chat_member: before, new_chat_member: now } = ctx.myChatMember;
 	if (isInChat(before) || !isInChat(now)) return;
-	const welcome = welcomeMessage({ isAdmin: now.status === 'administrator' });
+	const welcome = welcomeMessage({ isAdmin: isAdmin(now) });
 	await ctx.reply(welcome.text, welcome.options);
 });
 

@@ -82,3 +82,8 @@ export function isInChat(member: ChatMember): boolean {
 			return false;
 	}
 }
+
+/** An admin bot gets every message, so the welcome asks for the role while the bot lacks it. */
+export function isAdmin(member: ChatMember): boolean {
+	return member.status === 'administrator' || member.status === 'creator';
+}

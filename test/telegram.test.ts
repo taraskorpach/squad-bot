@@ -4,6 +4,7 @@ import {
 	ALLOWED_UPDATES,
 	type AllowedUpdate,
 	chatOf,
+	isAdmin,
 	isGroup,
 	isInChat,
 	personSending,
@@ -135,6 +136,19 @@ describe('isInChat', () => {
 	it('counts a restricted member only while they are still a member', () => {
 		expect(isInChat(chatMember(users.oleg, 'restricted', { isMember: true }))).toBe(true);
 		expect(isInChat(chatMember(users.oleg, 'restricted', { isMember: false }))).toBe(false);
+	});
+});
+
+describe('isAdmin', () => {
+	it.each<[ChatMember['status'], boolean]>([
+		['creator', true],
+		['administrator', true],
+		['member', false],
+		['restricted', false],
+		['left', false],
+		['kicked', false],
+	])('counts a %s as an admin: %s', (status, expected) => {
+		expect(isAdmin(chatMember(users.oleg, status))).toBe(expected);
 	});
 });
 
