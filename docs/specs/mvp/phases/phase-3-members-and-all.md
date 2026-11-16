@@ -11,10 +11,10 @@ pr: A
 
 **Files to touch:**
 - `src/chat/schema.ts` (migration 2)
-- `src/members/roster.ts`, `src/members/member-store.ts`, `src/members/member-handlers.ts`
-- `src/members/mentions.ts`, `src/members/all-handlers.ts`
+- `src/members/roster.ts`, `src/members/member-store.ts`, `src/members/member-handlers.ts` (learning)
+- `src/members/mentions.ts`, `src/members/all-handlers.ts`, `src/members/welcome-handlers.ts` (the welcome and 👋)
 - `src/stats/event-store.ts`, `src/stats/domikpisik-handlers.ts`
-- `src/texts.ts`, `src/welcome.ts`, `src/telegram.ts` (`HI_CALLBACK`, `personSending`), `src/bot.ts` (the catch-all for unknown callback data)
+- `src/texts.ts`, `src/welcome.ts`, `src/telegram.ts` (`HI_CALLBACK`, `personSending`, `sentAt`), `src/bot.ts` (the catch-all for unknown callback data)
 - `src/settings.ts`, `src/chat/room.ts`, `src/chat/chat-room.ts`, `src/context.ts` (`MENTION_CHUNK`
   and the in-memory tag window reach features through `ctx.room`), `src/chat/throttle.ts`
 - `wrangler.jsonc` (`MENTION_CHUNK`) and the regenerated `worker-configuration.d.ts`
@@ -63,8 +63,8 @@ pr: A
 - [x] Migration 2: `members` and the append-only `events` table, with no unique index and no CHECK on `kind`
 - [x] Roster rules (pure): `isInChat` from `chat_member` updates; ordinary messages and taps mark their sender in, `left_chat_member` marks that user out, `new_chat_members` the added users in; bots excluded; names refreshed
 - [x] Member learning: every ordinary message and tap upserts its sender; joins and leaves update `in_chat` in either arrival order
-- [ ] Mentions (pure): escaped `tg://user` links, shared first names told apart, chunks of `MENTION_CHUNK`
-- [ ] `/all`: records an `all` event every time; replies with chunked mentions of every member except the caller (or the empty-state text), at most once per 30 s, a repeat getting 👌; a stale call is only counted
+- [x] Mentions (pure): escaped `tg://user` links, shared first names told apart, chunks of `MENTION_CHUNK`
+- [x] `/all`: records an `all` event every time; replies with chunked mentions of every member except the caller (or the empty-state text), at most once per 30 s, a repeat getting 👌; a stale call is only counted
 - [ ] `/domikpisik`: no reply; records a `domikpisik` event, once per update
 - [ ] Welcome: `welcomeMessage({ isAdmin })` from `src/welcome.ts`, sent when the bot is added (`isInChat` false → true); 👋 registers the presser with its toast; unknown callback data gets an empty answer
 
