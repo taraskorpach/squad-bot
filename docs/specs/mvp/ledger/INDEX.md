@@ -25,5 +25,6 @@ Warm cache for forward-propagating learnings. One row per ledger entry with its
 - `decision-timers-from-pools.md` — [phase 6, 7, 8] — the alarm reads open pools; no jobs table; failed actions retry 3×
 - `decision-events-append-only.md` — [phase 3, 6, 9] — no unique index or kind CHECK; once-per-pool counting in queries
 - `decision-tag-window.md` — [phase 3, 7] — /all and 🔔 tag at most once per 30 s; every /all counts (Taras)
+- `decision-event-time-is-when-the-person-acted.md` — [phase 6, 9] — an event's at is its message's date for a command, the clock for a tap
 
 ## Workarounds

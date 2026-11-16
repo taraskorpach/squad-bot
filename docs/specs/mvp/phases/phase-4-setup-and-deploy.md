@@ -65,4 +65,6 @@ pr: A
   (wrangler ≥ 4.77). So PR A, whose merge deploys, merges inside phase 5, after the secrets.
 - `COMMANDS`' Ukrainian descriptions are bot copy, which `src/texts.ts` holds; decide whether
   `src/telegram.ts` imports them from that leaf or `COMMANDS` moves (phase 3 preflight). Nothing
-  guards "import-free" before the script first runs under Node, so run it in CI.
+  guards "import-free" before the script first runs under Node, so run it in CI. Phase 3 checked
+  it once by hand: `node --input-type=module -e "await import('./src/welcome.ts')"` loads under
+  Node 26 with no build step.

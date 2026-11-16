@@ -16,7 +16,7 @@
 
 - [ ] Phase 1 — Accounts and repo → `phases/phase-1-accounts-and-repo.md`
 - [x] Phase 2 — Skeleton and webhook plumbing → `phases/phase-2-skeleton-and-webhook.md`
-- [ ] Phase 3 — Members, /all and /domikpisik → `phases/phase-3-members-and-all.md`
+- [x] Phase 3 — Members, /all and /domikpisik → `phases/phase-3-members-and-all.md`
 - [ ] Phase 4 — Setup script and deploy pipeline → `phases/phase-4-setup-and-deploy.md`
 - [ ] Phase 5 — Go live with /all → `phases/phase-5-go-live.md`
 - [ ] Phase 6 — Pools: open, answer, bench → `phases/phase-6-pools-core.md`
