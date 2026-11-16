@@ -11,7 +11,9 @@ export interface TelegramCall {
 export type TelegramFailure =
 	| { status: 429; retryAfter: number }
 	| { status: 500 }
-	| { status: 400; description?: string };
+	| { status: 400; description?: string }
+	/** The connection drops: grammY throws an HttpError, not a GrammyError. */
+	| { status: 'network' };
 
 const METHOD_URL = 'https://api.telegram.org/bot:token/:method';
 
@@ -78,6 +80,8 @@ function resultOf({ method, payload }: TelegramCall): Message | true {
 
 function failureResponse(failure: TelegramFailure): Response {
 	switch (failure.status) {
+		case 'network':
+			return HttpResponse.error();
 		case 429:
 			return HttpResponse.json(
 				{

@@ -34,7 +34,7 @@ describe('a failed update', () => {
 	it('is acknowledged after a commit: the change stays, the error is logged', async () => {
 		let runs = 0;
 		const stub = await roomWith([
-			(ctx, next) => {
+			(_ctx, next) => {
 				runs++;
 				return next();
 			},

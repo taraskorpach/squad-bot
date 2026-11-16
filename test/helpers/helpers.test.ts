@@ -1,5 +1,5 @@
 import { env } from 'cloudflare:workers';
-import { Api, Bot, GrammyError } from 'grammy';
+import { Api, Bot, GrammyError, HttpError } from 'grammy';
 import { describe, expect, it } from 'vitest';
 import { telegram } from './telegram';
 import { BOT, botAdded, CHAT_ID, command, memberChange, tap, textMessage, users } from './updates';
@@ -41,6 +41,13 @@ describe('the Telegram fake', () => {
 		expect(error).toBeInstanceOf(GrammyError);
 		expect((error as GrammyError).error_code).toBe(code);
 		expect((error as GrammyError).parameters.retry_after).toBe(retryAfter);
+	});
+
+	it('drops the connection when asked, as a network failure would', async () => {
+		telegram.fail('sendMessage', { status: 'network' });
+
+		await expect(new Api(env.BOT_TOKEN).sendMessage(CHAT_ID, 'x')).rejects.toThrow(HttpError);
+		expect(telegram.callsTo('sendMessage')).toHaveLength(1);
 	});
 
 	it('fails only as many calls as asked, and records the failed ones', async () => {
