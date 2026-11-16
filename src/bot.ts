@@ -4,10 +4,11 @@ import type { UserFromGetMe } from 'grammy/types';
 import type { BotContext, UpdateRoom } from './context';
 import { tagAll } from './members/all-handlers';
 import { learningMembers } from './members/member-handlers';
+import { countDomikpisik } from './stats/domikpisik-handlers';
 import { API_TIMEOUT_SECONDS, personSending, sentAt } from './telegram';
 
 /** Every feature, in the order an update meets them. */
-export const FEATURES: readonly Middleware<BotContext>[] = [tagAll];
+export const FEATURES: readonly Middleware<BotContext>[] = [tagAll, countDomikpisik];
 
 /**
  * Capped: unbounded defaults would hold the chat's queue and sleep past the webhook.
