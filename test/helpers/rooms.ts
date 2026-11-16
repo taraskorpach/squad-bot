@@ -32,11 +32,12 @@ export async function roomWith(
 	return stub;
 }
 
-/** A test feature that commits one note per update. */
-export const noting: Middleware<BotContext> = (ctx) => {
+/** A test feature that commits one note per update, then passes the update on. */
+export const noting: Middleware<BotContext> = (ctx, next) => {
 	ctx.room.commit((sql) => {
 		sql.exec('INSERT INTO notes (update_id, text) VALUES (?, ?)', ctx.update.update_id, 'note');
 	});
+	return next();
 };
 
 export function rows(stub: RoomStub, query: string) {

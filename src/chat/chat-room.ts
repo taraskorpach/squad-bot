@@ -1,13 +1,14 @@
 import { DurableObject } from 'cloudflare:workers';
-import type { Bot, Middleware } from 'grammy';
+import { type Bot, BotError, type Middleware } from 'grammy';
 import type { Update } from 'grammy/types';
 import { createBot, FEATURES } from '../bot';
 import { type BotContext, UpdateRoom } from '../context';
 import { type RoomSettings, readRoomSettings } from '../settings';
+import { canRedeliver, redeliveryCapReached } from './failure-policy';
 import { Room } from './room';
 import { MIGRATIONS, migrate } from './schema';
 import { SerialQueue } from './serial-queue';
-import { isProcessed, pruneUpdateLog, recordProcessed } from './update-log';
+import { isProcessed, pruneUpdateLog, recordFailure, recordProcessed } from './update-log';
 
 /** The bot serves one chat, so there is one object, addressed by this name. */
 export const ROOM_NAME = 'chat';
@@ -35,18 +36,34 @@ export class ChatRoom extends DurableObject<Env> {
 		return this.#queue.run(() => this.#process(update));
 	}
 
+	/** Rejects, so the Worker answers 500 and Telegram redelivers, only as the policy allows. */
 	async #process(update: Update): Promise<void> {
 		const { bot, room } = this.#ensureRuntime();
 		const updateId = update.update_id;
 		if (room.tx((sql) => isProcessed(sql, updateId))) return;
-		this.#current = new UpdateRoom(room, updateId);
+		const current = new UpdateRoom(room, updateId);
+		this.#current = current;
 		try {
 			await bot.handleUpdate(update);
-			room.write((sql) => recordProcessed(sql, updateId, room.clock()));
+		} catch (thrown) {
+			const error = thrown instanceof BotError ? thrown.error : thrown;
+			if (this.#shouldRedeliver(current, error)) throw error;
+			console.error(`Update ${updateId} failed and is acknowledged without redelivery`, error);
 		} finally {
 			this.#current = undefined;
-			room.write((sql) => pruneUpdateLog(sql, room.clock()));
 		}
+		room.write((sql) => {
+			recordProcessed(sql, updateId, room.clock());
+			pruneUpdateLog(sql, room.clock());
+		});
+	}
+
+	/** Only failures a retry can't duplicate are counted, and only they count toward the cap. */
+	#shouldRedeliver(update: UpdateRoom, error: unknown): boolean {
+		const { room, updateId, committed, delivered } = update;
+		if (!canRedeliver({ committed, delivered, error })) return false;
+		const count = room.tx((sql) => recordFailure(sql, updateId, room.clock()));
+		return !redeliveryCapReached(count, room.clock());
 	}
 
 	#ensureRuntime(): { bot: Bot<BotContext>; room: Room } {
@@ -56,6 +73,7 @@ export class ChatRoom extends DurableObject<Env> {
 			botInfo: this.#settings.botInfo,
 			features: this.features,
 			currentRoom: () => this.#currentRoom(),
+			onDelivered: () => this.#current?.markDelivered(),
 		});
 		const room = new Room({
 			storage: this.ctx.storage,
