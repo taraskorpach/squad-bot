@@ -54,7 +54,7 @@ them is `research/2026-11-16-wave-2-cloudflare-fit.md` and the craft snapshot.
 
 ## Deliverables
 
-- [ ] Scaffold: npm project with TypeScript 6, Biome, `.nvmrc` 26 and `wrangler.jsonc` (`ChatRoom` through `exports`, compatibility date 2026-11-16 with the `temporal` flag, observability on); `npm run check` passes on an empty Worker
+- [x] Scaffold: npm project with TypeScript 6, Biome, `.nvmrc` 26 and `wrangler.jsonc` (`ChatRoom` through `exports`, compatibility date 2026-11-16 with the `temporal` flag, observability on); `npm run check` passes on an empty Worker
 - [ ] Test harness: `@cloudflare/vitest-plugin` config with fake secrets, an MSW network that records and answers Telegram API calls, and update builders, with a self-test
 - [ ] Worker: `POST /webhook` answers 401 for a missing or wrong secret and 404 for other paths, finds the chat with `chatIdOf` (a test per `ALLOWED_UPDATES` type), ignores other chats, leaves groups that add it (`isInChat` false → true), logs a migration of the allowed chat, and routes the allowed chat to the one `ChatRoom`
 - [ ] Migrations: an ordered list applied once in the object's constructor, each migration with its `_sql_schema_migrations` row in one `transactionSync`; migration 1 creates `processed_updates` and `failed_updates`; settings checked at construction
