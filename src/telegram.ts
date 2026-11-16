@@ -1,9 +1,9 @@
 // Telegram shapes shared with the setup script: keep this module free of runtime imports.
-import type { ChatMember, Update, User } from 'grammy/types';
+import type { Chat, ChatMember, Update, User } from 'grammy/types';
 
 export const WEBHOOK_PATH = '/webhook';
 
-/** The update types the webhook asks for. Each must carry a chat id that `chatIdOf` finds. */
+/** The update types the webhook asks for. Each must carry a chat that `chatOf` finds. */
 export const ALLOWED_UPDATES = [
 	'message',
 	'callback_query',
@@ -25,13 +25,26 @@ export const MESSAGE_FORMAT = {
 	link_preview_options: { is_disabled: true },
 } as const;
 
-export function chatIdOf(update: Update): number | undefined {
-	return (
-		update.message?.chat.id ??
-		update.callback_query?.message?.chat.id ??
-		update.chat_member?.chat.id ??
-		update.my_chat_member?.chat.id
-	);
+/** The chat an update belongs to, whatever its type. A tap's is the chat of its message. */
+export function chatOf(update: Update): Chat | undefined {
+	const withChat =
+		update.message ??
+		update.edited_message ??
+		update.guest_message ??
+		update.channel_post ??
+		update.edited_channel_post ??
+		update.business_message ??
+		update.edited_business_message ??
+		update.deleted_business_messages ??
+		update.stopped_message_generation ??
+		update.message_reaction ??
+		update.message_reaction_count ??
+		update.my_chat_member ??
+		update.chat_member ??
+		update.chat_join_request ??
+		update.chat_boost ??
+		update.removed_chat_boost;
+	return withChat?.chat ?? update.callback_query?.message?.chat;
 }
 
 /**

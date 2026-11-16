@@ -2,7 +2,7 @@ import { Api } from 'grammy';
 import type { Chat, ChatMemberUpdated, Update } from 'grammy/types';
 import { ROOM_NAME } from './chat/chat-room';
 import { parseAllowedChatId } from './settings';
-import { API_TIMEOUT_SECONDS, chatIdOf, isInChat, WEBHOOK_PATH } from './telegram';
+import { API_TIMEOUT_SECONDS, chatOf, isInChat, WEBHOOK_PATH } from './telegram';
 
 export { ChatRoom } from './chat/chat-room';
 
@@ -21,7 +21,7 @@ export default {
 } satisfies ExportedHandler<Env>;
 
 async function route(update: Update, env: Env): Promise<Response> {
-	const chatId = chatIdOf(update);
+	const chatId = chatOf(update)?.id;
 	if (chatId !== parseAllowedChatId(env.ALLOWED_CHAT_ID)) {
 		console.log(`Ignored update ${update.update_id} from chat ${chatId ?? 'none'}`);
 		await leaveIfAdded(update.my_chat_member, env.BOT_TOKEN);

@@ -1,9 +1,9 @@
-import type { ChatMember, Update } from 'grammy/types';
+import type { Chat, ChatMember, Update } from 'grammy/types';
 import { describe, expect, it } from 'vitest';
 import {
 	ALLOWED_UPDATES,
 	type AllowedUpdate,
-	chatIdOf,
+	chatOf,
 	isInChat,
 	personSending,
 	sentAt,
@@ -30,18 +30,68 @@ const EXAMPLES: Record<AllowedUpdate, Update> = {
 	my_chat_member: botAdded({ chatId: CHAT }),
 };
 
-describe('chatIdOf', () => {
+describe('chatOf', () => {
 	it.each(ALLOWED_UPDATES)('finds the chat of a %s update', (type) => {
-		expect(chatIdOf(EXAMPLES[type])).toBe(CHAT);
+		expect(chatOf(EXAMPLES[type])?.id).toBe(CHAT);
 	});
 
-	it('finds none in an update type the webhook does not ask for', () => {
+	const group: Chat.GroupChat = { id: -4001, type: 'group', title: 'Стара група' };
+	const supergroup: Chat.SupergroupChat = { id: -1004001, type: 'supergroup', title: 'Squad' };
+
+	it.each<[string, Update, Chat]>([
+		[
+			'an edited message',
+			{
+				update_id: 1,
+				edited_message: {
+					message_id: 1,
+					date: 0,
+					edit_date: 1,
+					chat: group,
+					from: users.taras,
+					text: 'x',
+				},
+			},
+			group,
+		],
+		[
+			'a join request',
+			{
+				update_id: 1,
+				chat_join_request: {
+					chat: supergroup,
+					from: users.oleg,
+					user_chat_id: users.oleg.id,
+					date: 0,
+				},
+			},
+			supergroup,
+		],
+		[
+			'a reaction',
+			{
+				update_id: 1,
+				message_reaction: {
+					chat: group,
+					message_id: 1,
+					date: 0,
+					old_reaction: [],
+					new_reaction: [],
+				},
+			},
+			group,
+		],
+	])('finds the chat of %s, which the webhook does not ask for', (_case, update, chat) => {
+		expect(chatOf(update)).toEqual(chat);
+	});
+
+	it('finds none in an update that has no chat', () => {
 		const update: Update = {
 			update_id: 1,
 			inline_query: { id: '1', from: users.taras, query: '', offset: '' },
 		};
 
-		expect(chatIdOf(update)).toBeUndefined();
+		expect(chatOf(update)).toBeUndefined();
 	});
 
 	it('finds none in a tap on an inline message, which has no chat', () => {
@@ -56,7 +106,7 @@ describe('chatIdOf', () => {
 			},
 		};
 
-		expect(chatIdOf(update)).toBeUndefined();
+		expect(chatOf(update)).toBeUndefined();
 	});
 });
 
