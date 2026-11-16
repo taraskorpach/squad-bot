@@ -14,7 +14,8 @@ pr: B
 - `src/kyiv-time.ts` (created here, or by phase 9 if it runs first)
 - `src/pools/pool-args.ts`, `src/pools/pool-rules.ts`, `src/pools/pool-format.ts`, `src/pools/pool-keyboards.ts`
 - `src/pools/pool-store.ts`, `src/pools/pool-actions.ts`, `src/pools/pool-handlers.ts`, `src/pools/pool-callbacks.ts`
-- `src/texts.ts`, `src/bot.ts`
+- `src/texts.ts` (the pool copy, and the plural helper on `Intl.PluralRules('uk')` for the
+  header's `місце|місця|місць`), `src/bot.ts`
 - `test/kyiv-time.test.ts`, `test/pools/*.test.ts`
 
 ## Implementation guidance

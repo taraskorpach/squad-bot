@@ -14,9 +14,13 @@ pr: A
 - `src/members/roster.ts`, `src/members/member-store.ts`, `src/members/member-handlers.ts`
 - `src/members/mentions.ts`, `src/members/all-handlers.ts`
 - `src/stats/event-store.ts`, `src/stats/domikpisik-handlers.ts`
-- `src/texts.ts`, `src/welcome.ts`, `src/telegram.ts` (`HI_CALLBACK`), `src/bot.ts` (the catch-all for unknown callback data)
+- `src/texts.ts`, `src/welcome.ts`, `src/telegram.ts` (`HI_CALLBACK`, `personSending`), `src/bot.ts` (the catch-all for unknown callback data)
+- `src/settings.ts`, `src/chat/room.ts`, `src/chat/chat-room.ts`, `src/context.ts` (`MENTION_CHUNK`
+  and the in-memory tag window reach features through `ctx.room`), `src/chat/throttle.ts`
 - `wrangler.jsonc` (`MENTION_CHUNK`) and the regenerated `worker-configuration.d.ts`
-- `test/members/*.test.ts`, `test/stats/domikpisik-handlers.test.ts`, `test/welcome.test.ts`
+- `tsconfig.json` (`allowImportingTsExtensions`, for `welcome.ts`'s `.ts` imports)
+- `test/members/*.test.ts`, `test/stats/*.test.ts`, `test/welcome.test.ts`, `test/chat/throttle.test.ts`,
+  and the phase 2 tests whose shapes grow: `test/telegram.test.ts`, `test/settings.test.ts`, `test/chat/schema.test.ts`
 
 ## Implementation guidance
 
@@ -31,8 +35,13 @@ pr: A
 - **Counting** goes through `ctx.room.commit`, so a redelivered `/all` never counts twice.
   `events` is append-only, and its kinds are a TypeScript union at one `recordEvent` writer.
   "Once per pool and person" is a rule of the stats queries (phase 9), not a constraint.
-- **`src/texts.ts`** starts here and holds every Ukrainian string from `design.md`, plus a plural
-  helper on `Intl.PluralRules('uk')`. Keep it import-free: the setup script imports it in phase 4.
+- **`src/texts.ts`** starts here. Every Ukrainian string the bot sends lives in it, added by the
+  phase that first sends it: here the welcome, the 👋 toast and `/all`. The plural helper on
+  `Intl.PluralRules('uk')` comes with its first caller, phase 6's card header (preflight
+  2026-11-16: no dead code in PR A). Keep it import-free: the setup script imports it in phase 4.
+- **Learning runs before the gate**, right after `ctx.room` is attached, so the roster refuses
+  bots and `sender_chat` messages itself, through the same `personSending(update)` the gate uses
+  (`src/telegram.ts`).
 - **The welcome** is built by `welcomeMessage({ isAdmin })` in `src/welcome.ts`, which the setup
   script uses too.
   - `welcome.ts` imports only `src/texts.ts` and `src/telegram.ts`, with `.ts` extensions.

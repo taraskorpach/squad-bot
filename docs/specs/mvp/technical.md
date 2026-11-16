@@ -84,6 +84,7 @@ The storage and Telegram handle shared by every write path, updates and alarms a
 - `room.tx(fn: (sql) => T): T` runs `ctx.storage.transactionSync` and returns `fn`'s result. Reading, deciding and writing all happen inside `fn`, and the decision comes out.
 - `room.write(fn)` does the same for idempotent writes: member upserts, `message_id`, `card_render`, `pool_messages`.
 - It also carries `room.clock`, `room.random`, `room.chatId`, and `room.api`: the bot's `Api` with auto-retry and the delivered marker.
+- And the object's memory: `room.mentionChunk` (the `MENTION_CHUNK` setting) and `room.throttle`, which remembers when each keyed action last ran (`/all`'s 30 s window; 🔔's per pool in phase 7). It lives on the room because feature modules are shared by every object in the isolate.
 - `ctx.room` (`src/context.ts`) wraps the room for one update:
   - `ctx.room.commit(fn)` is `room.tx((sql) => { recordUpdateOnce(sql); return fn(sql); })`.
   - `recordUpdateOnce` is an `INSERT OR IGNORE` into `processed_updates`, so a second commit in the same update is harmless.
@@ -92,7 +93,7 @@ The storage and Telegram handle shared by every write path, updates and alarms a
 ### Processing one update
 1. If `processed_updates` holds the `update_id`, stop: it is a redelivery.
 2. Run `bot.handleUpdate(update)`. The bot has `botInfo: JSON.parse(env.BOT_INFO)`, so there is no `getMe` call.
-3. Member learning runs first (phase 3). Then:
+3. Member learning runs first (phase 3), as soon as `ctx.room` is attached and before the gate below, so the roster refuses bots and `sender_chat` messages itself (`personSending`). Then:
    - Messages and taps from a bot, or with `sender_chat` (anonymous admins, channel identities), stop.
    - A message older than 10 minutes by `message.date` is marked `stale`. Features count it where they count, and do nothing else.
 4. Handlers follow **decide and write, then call Telegram**:
@@ -117,6 +118,8 @@ Never answer 200 for a failed update the way grammY's Deno Workers guide does (`
 ## Data model (object SQLite)
 
 Times are epoch milliseconds, UTC. Tables are snake_case plurals (Cloudflare's rules).
+
+An event's `at` is when the person acted: a command's message `date`, or the room's clock for a tap, which carries no date. So a late `/all` counts in the month it was made.
 
 The schema holds identity and structure. Tunable domain rules (event kinds, size bounds, counting rules) live in code, for two reasons:
 - SQLite can't change a CHECK without rebuilding the table.
@@ -198,10 +201,11 @@ None of these imports grammY or touches storage; time and randomness come in as 
 - `WEBHOOK_PATH` and `ALLOWED_UPDATES` (phase 2), `HI_CALLBACK` (phase 3), `COMMANDS` (phase 4).
 - `chatIdOf(update)`: the chat id of any allowed update type, or none.
 - `isInChat(member)`: true for `member`, `administrator`, `creator`, or `restricted` with `is_member`. "Added" means false before and true after; the Worker and the welcome use the same test.
+- `personSending(update)`: the person behind a message or a tap, or none for bots and `sender_chat` messages (anonymous admins, channels, a linked channel's forwards, whose `from` is Telegram's own non-bot account). The gate and the roster share it.
 
 ### Roster (`src/members/roster.ts`, phase 3)
 - A member is a non-bot user. Every `chat_member` update sets `in_chat` from `isInChat` of the new status.
-- An ordinary message or a tap marks its sender as in the chat and refreshes their name.
+- An ordinary message or a tap marks its sender as in the chat and refreshes their name. An ordinary message carries one of grammY's content kinds (text, photo, sticker, poll, …); one without any is a service message.
 - Service messages aren't sightings:
   - `new_chat_members` marks the added users as in.
   - `left_chat_member` marks that user as out. Its `from` is the person who left, so it must not count as a sighting.
@@ -472,7 +476,7 @@ scripts/
 src/
   index.ts          Worker: webhook, routing, foreign chats                  phase 2
   telegram.ts       WEBHOOK_PATH, ALLOWED_UPDATES, chatIdOf, isInChat,
-                    HI_CALLBACK, COMMANDS (import-free)                      phases 2, 3, 4
+                    personSending, HI_CALLBACK, COMMANDS (import-free)       phases 2, 3, 4
   texts.ts          every Ukrainian string, plural helper (import-free)      phase 3+
   welcome.ts        welcomeMessage({ isAdmin }); imports only the leaves     phase 3
   kyiv-time.ts      zone, wall time → instant, labels, month window          phases 6, 9
@@ -482,6 +486,8 @@ src/
     chat-room.ts    ChatRoom: migrations, settings, queue, dedupe, failure
                     policy, alarm, arming                                    phases 2, 8
     room.ts         Room: tx, write, clock, random, chatId, api              phase 2
+                    mentionChunk, throttle                                   phase 3
+    throttle.ts     when each keyed action last ran, in memory              phase 3
     schema.ts       ordered migrations                                       phases 2, 3, 6, 8
   members/
     roster.ts, member-store.ts, member-handlers.ts                           phase 3

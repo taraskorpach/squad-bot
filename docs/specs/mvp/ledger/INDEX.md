@@ -13,6 +13,7 @@ Warm cache for forward-propagating learnings. One row per ledger entry with its
 - `docs/specs/_ledger/gotcha-rpc-promise-expect-rejects.md` — [general] — settle a DO RPC call before asserting; expect().rejects fails the run
 - `docs/specs/_ledger/gotcha-grammy-composer-command-returns-branch.md` — [general] — register the Composer, not what .command() returns: it drops the filter
 - `docs/specs/_ledger/gotcha-do-sql-multi-statement-bindings.md` — [general] — DO SQLite: multi-statement exec takes no bindings; one exec per statement
+- `docs/specs/_ledger/gotcha-feature-module-state-shared-across-objects.md` — [general] — per-chat memory goes on Room: feature modules are shared by every object
 
 ## Principles
 - `principle-actions-commit-through-update-room.md` — [phase 6, 7, 8] — pool actions from a handler commit via ctx.room, or the update isn't recorded

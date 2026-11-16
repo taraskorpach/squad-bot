@@ -12,7 +12,7 @@ pr: A
 **Files to touch:**
 - `src/telegram.ts` (`COMMANDS`)
 - `scripts/configure-telegram.ts` (the Node shell), `scripts/telegram-setup.ts` (pure), `scripts/tsconfig.json`
-- `tsconfig.json` (allow `.ts` imports), `.gitignore` (`.prod.vars`)
+- `.gitignore` (`.prod.vars`); `tsconfig.json` already allows `.ts` imports (phase 3)
 - `package.json` (`telegram:configure`; `tsc --noEmit -p scripts` in `check`)
 - `.github/workflows/deploy.yml`
 - `README.md`
@@ -63,3 +63,6 @@ pr: A
 - Workers Builds stays off: deploys come only from the workflow, after the checks.
 - `secrets.required` fails `wrangler deploy` while any listed secret is missing on the Worker
   (wrangler ≥ 4.77). So PR A, whose merge deploys, merges inside phase 5, after the secrets.
+- `COMMANDS`' Ukrainian descriptions are bot copy, which `src/texts.ts` holds; decide whether
+  `src/telegram.ts` imports them from that leaf or `COMMANDS` moves (phase 3 preflight). Nothing
+  guards "import-free" before the script first runs under Node, so run it in CI.
