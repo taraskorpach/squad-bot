@@ -29,6 +29,31 @@ export const MIGRATIONS: readonly Migration[] = [
 			);
 		`,
 	},
+	{
+		id: 2,
+		description: 'the members, and the event record the stats count',
+		// The record is history nothing can regenerate, so it takes every event: the kinds are the
+		// EventKind union in src/stats/event-store.ts, and the counting rules live in the stats
+		// queries, not in a unique index or a CHECK that SQLite can't change in place.
+		sql: `
+			CREATE TABLE members (
+				user_id    INTEGER PRIMARY KEY,
+				first_name TEXT NOT NULL,
+				last_name  TEXT,
+				username   TEXT,
+				in_chat    INTEGER NOT NULL DEFAULT 1,
+				seen_at    INTEGER NOT NULL
+			);
+			CREATE TABLE events (
+				id      INTEGER PRIMARY KEY AUTOINCREMENT,
+				kind    TEXT NOT NULL,
+				user_id INTEGER NOT NULL,
+				pool_id INTEGER,
+				at      INTEGER NOT NULL
+			);
+			CREATE INDEX idx_events_kind_at ON events (kind, at);
+		`,
+	},
 ];
 
 /** Each migration commits with its own row, so one that fails halfway leaves nothing behind. */

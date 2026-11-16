@@ -26,8 +26,11 @@ describe('migrations', () => {
 			expect(appliedIds(state.storage)).toEqual(MIGRATIONS.map((migration) => migration.id));
 			expect(tableNames(state.storage)).toEqual([
 				'_sql_schema_migrations',
+				'events',
 				'failed_updates',
+				'members',
 				'processed_updates',
+				'sqlite_sequence',
 			]);
 		});
 	});
@@ -66,6 +69,31 @@ describe('migrations', () => {
 
 			expect(tableNames(state.storage)).not.toContain('half');
 			expect(appliedIds(state.storage)).not.toContain(101);
+		});
+	});
+});
+
+describe('the event record', () => {
+	it('takes every event: no unique index drops a repeat, and no CHECK refuses a new kind', async () => {
+		await runInDurableObject(freshRoom(), (_room, state) => {
+			const record = (kind: string) =>
+				state.storage.sql.exec(
+					'INSERT INTO events (kind, user_id, at) VALUES (?, 1001, ?)',
+					kind,
+					NOW,
+				);
+
+			record('all');
+			record('all');
+			record('a kind no phase has planned');
+
+			expect(
+				state.storage.sql.exec('SELECT kind, pool_id FROM events ORDER BY id').toArray(),
+			).toEqual([
+				{ kind: 'all', pool_id: null },
+				{ kind: 'all', pool_id: null },
+				{ kind: 'a kind no phase has planned', pool_id: null },
+			]);
 		});
 	});
 });
