@@ -37,7 +37,7 @@ The production bot is **not** added to the friends' chat here: that is phase 5.
 
 ## Deliverables
 
-- [ ] GitHub repo created and `main` pushed (evidence: repo URL)
+- [x] GitHub repo created and `main` pushed (evidence: repo URL) — https://github.com/taraskorpach/squad-bot (private), main pushed 2026-11-16
 - [ ] Cloudflare account on the Free plan, no card, with its workers.dev subdomain and `wrangler login` done on Taras's machine (evidence: account id and subdomain)
 - [ ] Production bot created in @BotFather, token stored outside the repo (evidence: @username)
 - [ ] Dev bot created and added to a test group of at least two accounts (evidence: @username)
