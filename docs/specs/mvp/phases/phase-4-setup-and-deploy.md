@@ -45,7 +45,8 @@ pr: A
      `wrangler secret put` and `.prod.vars`.
   5. Merging PR A; its deploy fails while a secret is missing.
   6. `webhook`, then `welcome`.
-  7. Local development with the dev bot and `wrangler dev --tunnel`.
+  7. Local development with the same bot in the test group and `wrangler dev --tunnel`, and
+     pointing the webhook back at the Worker afterwards (one bot has one webhook).
 
 ## Deliverables
 
@@ -55,7 +56,7 @@ pr: A
 - [ ] `telegram:configure webhook <worker-url>`: sets the webhook with the secret, `ALLOWED_UPDATES` and pending updates dropped, then the group command menu, and fails when `getWebhookInfo` reports an error
 - [ ] `telegram:configure welcome`: posts `welcomeMessage` to `ALLOWED_CHAT_ID`, with the ⚠️ line when `getChatMember` says the bot isn't an admin
 - [ ] `.github/workflows/deploy.yml`: on push to `main` and on manual dispatch, the checks, then `wrangler deploy` with the Cloudflare secrets
-- [ ] `README.md`: the go-live runbook (production values in `.prod.vars`, one `WEBHOOK_SECRET`, secrets before merging PR A, a supergroup id) and local development with the dev bot
+- [ ] `README.md`: the go-live runbook (production values in `.prod.vars`, one `WEBHOOK_SECRET`, secrets before merging PR A, a supergroup id) and local development with the one bot, including pointing the webhook back at the Worker
 
 ## Phase-local notes
 

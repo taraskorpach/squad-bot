@@ -20,6 +20,6 @@ Scoped to the one Worker this spec builds. Tick each before opening the PR, neve
 - [ ] `npm test` passes inside workerd
 - [ ] `npx wrangler deploy --dry-run` bundles without errors
 - [ ] Bot texts match `design.md` → *Screens and copy*, word for word
-- [ ] PR A: `/all`, `/domikpisik` and the 👋 welcome tried with the dev bot in the test group (`wrangler dev --tunnel`)
-- [ ] PR B: one pool run end to end with the dev bot on a freshly started `wrangler dev` (alarms can stop after a hot reload): open with a time two minutes ahead, answer from two accounts, bench, 🎲, the start ping, ✖️
-- [ ] PR C: `/stats` tried with the dev bot after a few `/all` calls and a pool
+- [ ] PR A: `/all`, `/domikpisik` and the 👋 welcome tried with the bot in the test group (`wrangler dev --tunnel`)
+- [ ] PR B: one pool run end to end with the bot on a freshly started `wrangler dev` (alarms can stop after a hot reload): open with a time two minutes ahead, answer from two accounts, bench, 🎲, the start ping, ✖️
+- [ ] PR C: `/stats` tried with the bot after a few `/all` calls and a pool
