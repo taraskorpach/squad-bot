@@ -16,6 +16,12 @@ export type AllowedUpdate = (typeof ALLOWED_UPDATES)[number];
 /** grammY's default of 500 s would let one hung call hold the chat's queue for minutes. */
 export const API_TIMEOUT_SECONDS = 10;
 
+/** How the bot sends every message: HTML, which mentions need, and no link previews. */
+export const MESSAGE_FORMAT = {
+	parse_mode: 'HTML',
+	link_preview_options: { is_disabled: true },
+} as const;
+
 export function chatIdOf(update: Update): number | undefined {
 	return (
 		update.message?.chat.id ??

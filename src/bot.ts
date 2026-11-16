@@ -2,11 +2,12 @@ import { autoRetry } from '@grammyjs/auto-retry';
 import { Bot, type Middleware, type Transformer } from 'grammy';
 import type { UserFromGetMe } from 'grammy/types';
 import type { BotContext, UpdateRoom } from './context';
+import { tagAll } from './members/all-handlers';
 import { learningMembers } from './members/member-handlers';
 import { API_TIMEOUT_SECONDS, personSending } from './telegram';
 
 /** Every feature, in the order an update meets them. */
-export const FEATURES: readonly Middleware<BotContext>[] = [];
+export const FEATURES: readonly Middleware<BotContext>[] = [tagAll];
 
 /**
  * Capped: unbounded defaults would hold the chat's queue and sleep past the webhook.
