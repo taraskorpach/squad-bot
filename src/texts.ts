@@ -17,6 +17,14 @@ export const texts = {
 		hiButton: HI_BUTTON,
 		hiToast: "Запам'ятав 👌",
 	},
+	/** The command menu in group chats, in its order. /domikpisik is a joke, not a feature. */
+	commandMenu: {
+		all: 'Тегнути всіх',
+		pool: 'Відкрити пул: /pool [гра] [розмір] [час]',
+		join: 'Приєднатися до пулу',
+		pools: 'Відкриті пули',
+		stats: 'Статистика',
+	},
 } as const;
 
 const UKRAINIAN = new Intl.Collator('uk');
