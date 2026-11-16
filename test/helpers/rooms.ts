@@ -40,6 +40,20 @@ export const noting: Middleware<BotContext> = (ctx, next) => {
 	return next();
 };
 
+/**
+ * The message of the error an RPC call rejected with, or undefined when it resolved.
+ * Never hand an RPC promise to `expect(...).rejects`: Vitest then sees an unhandled
+ * rejection and fails the run, even though every test passes.
+ */
+export async function failureOf(call: Promise<unknown>): Promise<string | undefined> {
+	try {
+		await call;
+		return undefined;
+	} catch (error) {
+		return error instanceof Error ? error.message : String(error);
+	}
+}
+
 export function rows(stub: RoomStub, query: string) {
 	return runInDurableObject(stub, (_room, state) => state.storage.sql.exec(query).toArray());
 }

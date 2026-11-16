@@ -60,7 +60,7 @@ them is `research/2026-11-16-wave-2-cloudflare-fit.md` and the craft snapshot.
 - [x] Migrations: an ordered list applied once in the object's constructor, each migration with its `_sql_schema_migrations` row in one `transactionSync`; migration 1 creates `processed_updates` and `failed_updates`; settings checked at construction
 - [x] Once and in order: the serial queue runs each update to the end before the next, a redelivered update changes nothing, and `ctx.room.commit` records the update id with the first change and returns its result
 - [x] Failure policy: a 500 only when nothing was committed or sent and the error isn't a permanent Telegram error, until the update has failed 3 times over 5 minutes (`failed_updates`); every other failure is logged and answered 200
-- [ ] grammY inside the object: built lazily from the `features` seam with `botInfo`, auto-retry capped at 2 retries and 5 s with server errors rethrown, the 10 s timeout and the delivered marker; bots and channel identities ignored, messages over 10 minutes old flagged stale, `/cmd@otherbot` ignored
+- [x] grammY inside the object: built lazily from the `features` seam with `botInfo`, auto-retry capped at 2 retries and 5 s with server errors rethrown, the 10 s timeout and the delivered marker; bots and channel identities ignored, messages over 10 minutes old flagged stale, `/cmd@otherbot` ignored
 - [x] CI: `.github/workflows/check.yml` runs `npm run check` and `npm test` on pushes and pull requests
 
 ## Phase-local notes

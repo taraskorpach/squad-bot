@@ -1,7 +1,7 @@
 import { runInDurableObject } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 import type { ChatRoom } from '../../src/chat/chat-room';
-import { freshRoom, noting, roomWith, rows } from '../helpers/rooms';
+import { failureOf, freshRoom, noting, roomWith, rows } from '../helpers/rooms';
 import { telegram } from '../helpers/telegram';
 import { CHAT_ID, textMessage } from '../helpers/updates';
 
@@ -92,7 +92,9 @@ describe('ChatRoom.handleUpdate', () => {
 			},
 		]);
 
-		await expect(stub.handleUpdate(textMessage('привіт'))).rejects.toThrow('the decision failed');
+		expect(await failureOf(stub.handleUpdate(textMessage('привіт')))).toContain(
+			'the decision failed',
+		);
 
 		expect(await rows(stub, 'SELECT * FROM notes')).toEqual([]);
 		expect(await rows(stub, 'SELECT * FROM processed_updates')).toEqual([]);

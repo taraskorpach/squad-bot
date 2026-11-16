@@ -4,7 +4,7 @@ import { http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createBot } from '../src/bot';
 import type { BotContext } from '../src/context';
-import { roomWith } from './helpers/rooms';
+import { failureOf, roomWith } from './helpers/rooms';
 import { network, telegram } from './helpers/telegram';
 import { BOT, CHANNEL, CHAT_ID, command, tap, textMessage, users } from './helpers/updates';
 
@@ -33,7 +33,7 @@ describe('the bot inside the object', () => {
 		telegram.fail('sendMessage', { status: 429, retryAfter: 0 }, 3);
 		const stub = await roomWith([sending]);
 
-		await expect(stub.handleUpdate(textMessage('x'))).rejects.toThrow();
+		expect(await failureOf(stub.handleUpdate(textMessage('x')))).toBeDefined();
 
 		expect(telegram.callsTo('sendMessage')).toHaveLength(3);
 	});
@@ -47,7 +47,7 @@ describe('the bot inside the object', () => {
 			},
 		]);
 
-		await expect(stub.handleUpdate(textMessage('x'))).resolves.toBeUndefined();
+		expect(await failureOf(stub.handleUpdate(textMessage('x')))).toBeUndefined();
 
 		expect(telegram.callsTo('sendMessage')).toHaveLength(2);
 	});
@@ -60,7 +60,7 @@ describe('the bot inside the object', () => {
 		telegram.fail('sendMessage', failure);
 		const stub = await roomWith([sending]);
 
-		await expect(stub.handleUpdate(textMessage('x'))).rejects.toThrow();
+		expect(await failureOf(stub.handleUpdate(textMessage('x')))).toBeDefined();
 
 		expect(telegram.callsTo('sendMessage')).toHaveLength(1);
 	});

@@ -1,7 +1,7 @@
 import type { Middleware } from 'grammy';
 import { beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 import type { BotContext } from '../../src/context';
-import { noting, roomWith, rows } from '../helpers/rooms';
+import { failureOf, noting, roomWith, rows } from '../helpers/rooms';
 import { telegram } from '../helpers/telegram';
 import { CHAT_ID, textMessage } from '../helpers/updates';
 
@@ -28,7 +28,7 @@ describe('a failed update', () => {
 			},
 		]);
 
-		await expect(stub.handleUpdate(textMessage('x'))).rejects.toThrow('boom');
+		expect(await failureOf(stub.handleUpdate(textMessage('x')))).toContain('boom');
 	});
 
 	it('is acknowledged after a commit: the change stays, the error is logged', async () => {
@@ -45,7 +45,7 @@ describe('a failed update', () => {
 		]);
 		const update = textMessage('x');
 
-		await expect(stub.handleUpdate(update)).resolves.toBeUndefined();
+		expect(await failureOf(stub.handleUpdate(update))).toBeUndefined();
 		await stub.handleUpdate(update);
 
 		expect(runs).toBe(1);
@@ -67,7 +67,7 @@ describe('a failed update', () => {
 		]);
 		const update = textMessage('x');
 
-		await expect(stub.handleUpdate(update)).resolves.toBeUndefined();
+		expect(await failureOf(stub.handleUpdate(update))).toBeUndefined();
 		await stub.handleUpdate(update);
 
 		expect(telegram.callsTo('sendMessage')).toHaveLength(1);
@@ -77,14 +77,14 @@ describe('a failed update', () => {
 		telegram.fail('sendMessage', { status: 400 });
 		const stub = await roomWith([sending]);
 
-		await expect(stub.handleUpdate(textMessage('x'))).resolves.toBeUndefined();
+		expect(await failureOf(stub.handleUpdate(textMessage('x')))).toBeUndefined();
 	});
 
 	it('is redelivered after a Telegram server error, when nothing was sent before it', async () => {
 		telegram.fail('sendMessage', { status: 500 });
 		const stub = await roomWith([sending]);
 
-		await expect(stub.handleUpdate(textMessage('x'))).rejects.toThrow();
+		expect(await failureOf(stub.handleUpdate(textMessage('x')))).toBeDefined();
 	});
 
 	it('is counted in its own transaction, after its commit rolled back', async () => {
@@ -98,7 +98,7 @@ describe('a failed update', () => {
 		]);
 		const update = textMessage('x');
 
-		await expect(stub.handleUpdate(update)).rejects.toThrow('mid-commit');
+		expect(await failureOf(stub.handleUpdate(update))).toContain('mid-commit');
 
 		expect(await rows(stub, 'SELECT * FROM notes')).toEqual([]);
 		expect(await rows(stub, 'SELECT update_id, attempts FROM failed_updates')).toEqual([
@@ -120,13 +120,13 @@ describe('a failed update', () => {
 			{ clock: () => now },
 		);
 
-		await expect(stub.handleUpdate(stuck)).rejects.toThrow();
+		expect(await failureOf(stub.handleUpdate(stuck))).toBeDefined();
 		now += MINUTE;
-		await expect(stub.handleUpdate(stuck)).rejects.toThrow();
+		expect(await failureOf(stub.handleUpdate(stuck))).toBeDefined();
 		now += MINUTE;
-		await expect(stub.handleUpdate(stuck)).rejects.toThrow();
+		expect(await failureOf(stub.handleUpdate(stuck))).toBeDefined();
 		now += 3 * MINUTE;
-		await expect(stub.handleUpdate(stuck)).resolves.toBeUndefined();
+		expect(await failureOf(stub.handleUpdate(stuck))).toBeUndefined();
 
 		const next = textMessage('наступне');
 		await stub.handleUpdate(next);
