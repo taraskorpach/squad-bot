@@ -1,7 +1,7 @@
 import { Composer } from 'grammy';
 import type { BotContext } from '../context';
 import { recordEvent } from '../stats/event-store';
-import { MESSAGE_FORMAT } from '../telegram';
+import { MESSAGE_FORMAT, sentAt } from '../telegram';
 import { texts } from '../texts';
 import { membersInChat } from './member-store';
 import { chunk, mentionsOf } from './mentions';
@@ -20,7 +20,7 @@ tagAll.command('all', async (ctx) => {
 	const caller = ctx.from;
 	if (!caller) return;
 	const inChat = ctx.room.commit((sql) => {
-		recordEvent(sql, { kind: 'all', userId: caller.id, at: ctx.msg.date * 1000 });
+		recordEvent(sql, { kind: 'all', userId: caller.id, at: sentAt(ctx.msg) });
 		return membersInChat(sql);
 	});
 	if (ctx.room.stale) return;

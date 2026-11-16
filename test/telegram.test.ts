@@ -6,6 +6,7 @@ import {
 	chatIdOf,
 	isInChat,
 	personSending,
+	sentAt,
 } from '../src/telegram';
 import {
 	botAdded,
@@ -96,5 +97,11 @@ describe('personSending', () => {
 		['an update that is neither', memberChange(users.oleg, { from: 'left', to: 'member' })],
 	])('is nobody for %s', (_case, update) => {
 		expect(personSending(update)).toBeUndefined();
+	});
+});
+
+describe('sentAt', () => {
+	it('is when Telegram says the message was sent, in epoch milliseconds', () => {
+		expect(sentAt({ date: 1_794_860_000 })).toBe(1_794_860_000_000);
 	});
 });

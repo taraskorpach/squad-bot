@@ -43,6 +43,11 @@ export function personSending(update: Update): User | undefined {
 	return sender?.is_bot ? undefined : sender;
 }
 
+/** When a message was sent, in epoch milliseconds: Telegram dates messages in whole seconds. */
+export function sentAt(message: { date: number }): number {
+	return message.date * 1000;
+}
+
 /** "Added" means false before and true after; the Worker and the welcome use the same test. */
 export function isInChat(member: ChatMember): boolean {
 	switch (member.status) {

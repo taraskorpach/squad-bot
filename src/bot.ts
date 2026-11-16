@@ -4,7 +4,7 @@ import type { UserFromGetMe } from 'grammy/types';
 import type { BotContext, UpdateRoom } from './context';
 import { tagAll } from './members/all-handlers';
 import { learningMembers } from './members/member-handlers';
-import { API_TIMEOUT_SECONDS, personSending } from './telegram';
+import { API_TIMEOUT_SECONDS, personSending, sentAt } from './telegram';
 
 /** Every feature, in the order an update meets them. */
 export const FEATURES: readonly Middleware<BotContext>[] = [tagAll];
@@ -75,8 +75,7 @@ const ignoringBotsAndChannels: Middleware<BotContext> = (ctx, next) => {
 
 /** Features count a stale message where they count, and do nothing else with it. */
 const flaggingStale: Middleware<BotContext> = (ctx, next) => {
-	const sentAt = ctx.message?.date;
-	if (sentAt !== undefined && ctx.room.clock() - sentAt * 1000 > STALE_AFTER_MS) {
+	if (ctx.message && ctx.room.clock() - sentAt(ctx.message) > STALE_AFTER_MS) {
 		ctx.room.markStale();
 	}
 	return next();
