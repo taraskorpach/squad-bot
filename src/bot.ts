@@ -2,7 +2,7 @@ import { autoRetry } from '@grammyjs/auto-retry';
 import { Bot, type Middleware, type Transformer } from 'grammy';
 import type { UserFromGetMe } from 'grammy/types';
 import type { BotContext, UpdateRoom } from './context';
-import { API_TIMEOUT_SECONDS } from './telegram';
+import { API_TIMEOUT_SECONDS, personSending } from './telegram';
 
 /** Every feature, in the order an update meets them. */
 export const FEATURES: readonly Middleware<BotContext>[] = [];
@@ -61,8 +61,8 @@ function attachingRoom(currentRoom: () => UpdateRoom): Middleware<BotContext> {
 
 /** Messages and taps from bots, anonymous admins and channel identities stop here. */
 const ignoringBotsAndChannels: Middleware<BotContext> = (ctx, next) => {
-	const sender = ctx.message?.from ?? ctx.callbackQuery?.from;
-	if (sender?.is_bot || ctx.message?.sender_chat) return;
+	const isMessageOrTap = ctx.message !== undefined || ctx.callbackQuery !== undefined;
+	if (isMessageOrTap && !personSending(ctx.update)) return;
 	return next();
 };
 

@@ -20,6 +20,9 @@ export const users = {
 /** A channel posting into the group through its identity, as anonymous admins and channels do. */
 export const CHANNEL: Chat.ChannelChat = { id: -1009999999999, type: 'channel', title: 'Канал' };
 
+/** Telegram's own account: the `from` of a linked channel's automatic forwards, and not a bot. */
+export const TELEGRAM: User = { id: 777000, is_bot: false, first_name: 'Telegram' };
+
 let lastId = 0;
 const nextId = (): number => ++lastId;
 const nowSeconds = (): number => Math.floor(Date.now() / 1000);
