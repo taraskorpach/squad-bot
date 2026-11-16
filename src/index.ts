@@ -1,8 +1,8 @@
 import { Api } from 'grammy';
-import type { Chat, ChatMemberUpdated, Update } from 'grammy/types';
+import type { ChatMemberUpdated, Update } from 'grammy/types';
 import { ROOM_NAME } from './chat/chat-room';
 import { parseAllowedChatId } from './settings';
-import { API_TIMEOUT_SECONDS, chatOf, isInChat, WEBHOOK_PATH } from './telegram';
+import { API_TIMEOUT_SECONDS, chatOf, isGroup, isInChat, WEBHOOK_PATH } from './telegram';
 
 export { ChatRoom } from './chat/chat-room';
 
@@ -64,10 +64,6 @@ async function leaveIfAdded(change: ChatMemberUpdated | undefined, token: string
 	} catch (error) {
 		console.error(`Could not leave chat ${change.chat.id}`, error);
 	}
-}
-
-function isGroup(chat: Chat): boolean {
-	return chat.type === 'group' || chat.type === 'supergroup';
 }
 
 function logIfMoved(update: Update): void {

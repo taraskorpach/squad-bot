@@ -4,6 +4,7 @@ import {
 	ALLOWED_UPDATES,
 	type AllowedUpdate,
 	chatOf,
+	isGroup,
 	isInChat,
 	personSending,
 	sentAt,
@@ -21,6 +22,8 @@ import {
 } from './helpers/updates';
 
 const CHAT = -100111;
+const group: Chat.GroupChat = { id: -4001, type: 'group', title: 'Стара група' };
+const supergroup: Chat.SupergroupChat = { id: -1004001, type: 'supergroup', title: 'Squad' };
 
 // A Record, so adding a type to ALLOWED_UPDATES without an example fails to compile.
 const EXAMPLES: Record<AllowedUpdate, Update> = {
@@ -34,9 +37,6 @@ describe('chatOf', () => {
 	it.each(ALLOWED_UPDATES)('finds the chat of a %s update', (type) => {
 		expect(chatOf(EXAMPLES[type])?.id).toBe(CHAT);
 	});
-
-	const group: Chat.GroupChat = { id: -4001, type: 'group', title: 'Стара група' };
-	const supergroup: Chat.SupergroupChat = { id: -1004001, type: 'supergroup', title: 'Squad' };
 
 	it.each<[string, Update, Chat]>([
 		[
@@ -107,6 +107,17 @@ describe('chatOf', () => {
 		};
 
 		expect(chatOf(update)).toBeUndefined();
+	});
+});
+
+describe('isGroup', () => {
+	it.each<[string, Chat, boolean]>([
+		['a group', group, true],
+		['a supergroup', supergroup, true],
+		['a private chat', { id: users.oleg.id, type: 'private', first_name: 'Олег' }, false],
+		['a channel', CHANNEL, false],
+	])('counts %s as a group: %s', (_case, chat, expected) => {
+		expect(isGroup(chat)).toBe(expected);
 	});
 });
 

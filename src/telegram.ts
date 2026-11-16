@@ -47,6 +47,10 @@ export function chatOf(update: Update): Chat | undefined {
 	return withChat?.chat ?? update.callback_query?.message?.chat;
 }
 
+export function isGroup(chat: Chat): chat is Chat.GroupChat | Chat.SupergroupChat {
+	return chat.type === 'group' || chat.type === 'supergroup';
+}
+
 /**
  * The person behind a message or a tap. Nobody for a bot, nor for a message sent on behalf of a
  * chat (anonymous admins, channels): its `from` is a stand-in, and for a linked channel's
