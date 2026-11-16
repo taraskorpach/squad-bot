@@ -35,6 +35,8 @@ const nowSeconds = (): number => Math.floor(Date.now() / 1000);
 
 export interface MessageOptions {
 	chatId?: number;
+	/** A whole chat, such as a basic group; it wins over `chatId`. */
+	chat?: GroupMessage['chat'];
 	from?: User;
 	/** Unix seconds, as Telegram sends it; defaults to now. */
 	date?: number;
@@ -51,7 +53,7 @@ function groupMessage(fields: Partial<GroupMessage>, options: MessageOptions): G
 	return {
 		message_id: nextId(),
 		date: options.date ?? nowSeconds(),
-		chat: supergroup(options.chatId ?? CHAT_ID),
+		chat: options.chat ?? supergroup(options.chatId ?? CHAT_ID),
 		from: options.from ?? users.taras,
 		...(options.senderChat && { sender_chat: options.senderChat }),
 		...fields,
