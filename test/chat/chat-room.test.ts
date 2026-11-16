@@ -1,42 +1,20 @@
 import { runInDurableObject } from 'cloudflare:test';
-import type { Middleware } from 'grammy';
 import { describe, expect, it } from 'vitest';
 import type { ChatRoom } from '../../src/chat/chat-room';
-import type { BotContext } from '../../src/context';
-import { freshRoom } from '../helpers/rooms';
+import { freshRoom, noting, roomWith, rows } from '../helpers/rooms';
 import { telegram } from '../helpers/telegram';
 import { CHAT_ID, textMessage } from '../helpers/updates';
 
 const HOUR = 60 * 60 * 1000;
 
-type Stub = ReturnType<typeof freshRoom>;
-
-/** A fresh object running these features, with a `notes` table for them to commit to. */
-async function roomWith(...features: Middleware<BotContext>[]): Promise<Stub> {
-	const stub = freshRoom();
-	await runInDurableObject(stub, (room: ChatRoom, state) => {
-		room.features = features;
-		state.storage.sql.exec('CREATE TABLE notes (update_id INTEGER NOT NULL, text TEXT NOT NULL)');
-	});
-	return stub;
-}
-
-const noting: Middleware<BotContext> = (ctx) => {
-	ctx.room.commit((sql) => {
-		sql.exec('INSERT INTO notes (update_id, text) VALUES (?, ?)', ctx.update.update_id, 'note');
-	});
-};
-
-function rows(stub: Stub, query: string) {
-	return runInDurableObject(stub, (_room, state) => state.storage.sql.exec(query).toArray());
-}
-
 describe('ChatRoom.handleUpdate', () => {
 	it('hands each update to the features', async () => {
 		const seen: number[] = [];
-		const stub = await roomWith((ctx) => {
-			seen.push(ctx.update.update_id);
-		});
+		const stub = await roomWith([
+			(ctx) => {
+				seen.push(ctx.update.update_id);
+			},
+		]);
 		const update = textMessage('привіт');
 
 		await stub.handleUpdate(update);
@@ -46,10 +24,13 @@ describe('ChatRoom.handleUpdate', () => {
 
 	it('ignores a redelivered update: it changes nothing the second time', async () => {
 		let runs = 0;
-		const stub = await roomWith((_ctx, next) => {
-			runs++;
-			return next();
-		}, noting);
+		const stub = await roomWith([
+			(_ctx, next) => {
+				runs++;
+				return next();
+			},
+			noting,
+		]);
 		const update = textMessage('привіт');
 
 		await stub.handleUpdate(update);
@@ -63,9 +44,11 @@ describe('ChatRoom.handleUpdate', () => {
 
 	it('records an update that committed nothing once it has been processed', async () => {
 		let runs = 0;
-		const stub = await roomWith(() => {
-			runs++;
-		});
+		const stub = await roomWith([
+			() => {
+				runs++;
+			},
+		]);
 		const update = textMessage('привіт');
 
 		await stub.handleUpdate(update);
@@ -76,18 +59,23 @@ describe('ChatRoom.handleUpdate', () => {
 
 	it("commits the update's id with its first change and returns the decision", async () => {
 		const seen: unknown[] = [];
-		const stub = await roomWith((ctx) => {
-			const decision = ctx.room.commit((sql) => {
-				sql.exec('INSERT INTO notes (update_id, text) VALUES (?, ?)', ctx.update.update_id, 'x');
-				return 'decided';
-			});
-			const recorded = ctx.room.write((sql) =>
-				sql
-					.exec('SELECT update_id FROM processed_updates WHERE update_id = ?', ctx.update.update_id)
-					.toArray(),
-			);
-			seen.push(decision, recorded.length, ctx.room.committed);
-		});
+		const stub = await roomWith([
+			(ctx) => {
+				const decision = ctx.room.commit((sql) => {
+					sql.exec('INSERT INTO notes (update_id, text) VALUES (?, ?)', ctx.update.update_id, 'x');
+					return 'decided';
+				});
+				const recorded = ctx.room.write((sql) =>
+					sql
+						.exec(
+							'SELECT update_id FROM processed_updates WHERE update_id = ?',
+							ctx.update.update_id,
+						)
+						.toArray(),
+				);
+				seen.push(decision, recorded.length, ctx.room.committed);
+			},
+		]);
 
 		await stub.handleUpdate(textMessage('привіт'));
 
@@ -95,12 +83,14 @@ describe('ChatRoom.handleUpdate', () => {
 	});
 
 	it('rolls back a commit that throws, update record included', async () => {
-		const stub = await roomWith((ctx) => {
-			ctx.room.commit((sql) => {
-				sql.exec('INSERT INTO notes (update_id, text) VALUES (?, ?)', ctx.update.update_id, 'x');
-				throw new Error('the decision failed');
-			});
-		});
+		const stub = await roomWith([
+			(ctx) => {
+				ctx.room.commit((sql) => {
+					sql.exec('INSERT INTO notes (update_id, text) VALUES (?, ?)', ctx.update.update_id, 'x');
+					throw new Error('the decision failed');
+				});
+			},
+		]);
 
 		await expect(stub.handleUpdate(textMessage('привіт'))).rejects.toThrow('the decision failed');
 
@@ -110,11 +100,13 @@ describe('ChatRoom.handleUpdate', () => {
 
 	it('runs one update to the end, Telegram calls included, before the next starts', async () => {
 		const log: string[] = [];
-		const stub = await roomWith(async (ctx) => {
-			log.push(`start ${ctx.update.update_id}`);
-			await ctx.api.sendMessage(CHAT_ID, 'відповідь');
-			log.push(`end ${ctx.update.update_id}`);
-		});
+		const stub = await roomWith([
+			async (ctx) => {
+				log.push(`start ${ctx.update.update_id}`);
+				await ctx.api.sendMessage(CHAT_ID, 'відповідь');
+				log.push(`end ${ctx.update.update_id}`);
+			},
+		]);
 		const first = textMessage('один');
 		const second = textMessage('два');
 
@@ -131,10 +123,13 @@ describe('ChatRoom.handleUpdate', () => {
 
 	it("doesn't let one update's failure stop the next", async () => {
 		const failing = textMessage('зламане');
-		const stub = await roomWith((ctx, next) => {
-			if (ctx.update.update_id === failing.update_id) throw new Error('boom');
-			return next();
-		}, noting);
+		const stub = await roomWith([
+			(ctx, next) => {
+				if (ctx.update.update_id === failing.update_id) throw new Error('boom');
+				return next();
+			},
+			noting,
+		]);
 		const next = textMessage('наступне');
 
 		const results = await Promise.allSettled([stub.handleUpdate(failing), stub.handleUpdate(next)]);
@@ -147,7 +142,7 @@ describe('ChatRoom.handleUpdate', () => {
 
 	it('forgets processed and failed updates after 48 hours', async () => {
 		const now = Date.now();
-		const stub = await roomWith();
+		const stub = await roomWith([]);
 		await runInDurableObject(stub, (room: ChatRoom, state) => {
 			room.clock = () => now;
 			state.storage.sql.exec(
