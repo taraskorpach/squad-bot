@@ -78,6 +78,7 @@ export class ChatRoom extends DurableObject<Env> {
 		const room = new Room({
 			storage: this.ctx.storage,
 			chatId: this.#settings.allowedChatId,
+			mentionChunk: this.#settings.mentionChunk,
 			api: bot.api,
 			clock: () => this.clock(),
 			random: () => this.random(),

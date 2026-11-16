@@ -1,6 +1,8 @@
 import { runInDurableObject } from 'cloudflare:test';
+import type { Middleware } from 'grammy';
 import { describe, expect, it } from 'vitest';
 import type { ChatRoom } from '../../src/chat/chat-room';
+import type { BotContext } from '../../src/context';
 import { failureOf, freshRoom, noting, roomWith, rows } from '../helpers/rooms';
 import { telegram } from '../helpers/telegram';
 import { CHAT_ID, textMessage } from '../helpers/updates';
@@ -167,6 +169,36 @@ describe('ChatRoom.handleUpdate', () => {
 			{ update_id: update.update_id },
 		]);
 		expect(await rows(stub, 'SELECT update_id FROM failed_updates')).toEqual([{ update_id: 4 }]);
+	});
+});
+
+describe("the room's memory", () => {
+	it('gives features the mention chunk the settings name', async () => {
+		const seen: number[] = [];
+		const stub = await roomWith([
+			(ctx) => {
+				seen.push(ctx.room.mentionChunk);
+			},
+		]);
+
+		await stub.handleUpdate(textMessage('привіт'));
+
+		expect(seen).toEqual([5]);
+	});
+
+	it('keeps one throttle per object, from one update to the next', async () => {
+		const claims: boolean[] = [];
+		const claiming: Middleware<BotContext> = (ctx) => {
+			claims.push(ctx.room.throttle.claim('all', 0, 30_000));
+		};
+		const first = await roomWith([claiming]);
+		const second = await roomWith([claiming]);
+
+		await first.handleUpdate(textMessage('один'));
+		await first.handleUpdate(textMessage('два'));
+		await second.handleUpdate(textMessage('три'));
+
+		expect(claims).toEqual([true, false, true]);
 	});
 });
 

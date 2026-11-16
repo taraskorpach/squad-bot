@@ -1,8 +1,10 @@
 import type { Api } from 'grammy';
+import { Throttle } from './throttle';
 
 export interface RoomOptions {
 	storage: DurableObjectStorage;
 	chatId: number;
+	mentionChunk: number;
 	api: Api;
 	clock: () => number;
 	random: () => number;
@@ -14,14 +16,19 @@ export interface RoomOptions {
  */
 export class Room {
 	readonly chatId: number;
+	/** How many mentions go in one message. */
+	readonly mentionChunk: number;
 	/** The bot's client: capped retries, and every successful call marks its update delivered. */
 	readonly api: Api;
+	/** Per object, because feature modules are shared by every object in the isolate. */
+	readonly throttle = new Throttle();
 	readonly #storage: DurableObjectStorage;
 	readonly #clock: () => number;
 	readonly #random: () => number;
 
 	constructor(options: RoomOptions) {
 		this.chatId = options.chatId;
+		this.mentionChunk = options.mentionChunk;
 		this.api = options.api;
 		this.#storage = options.storage;
 		this.#clock = options.clock;

@@ -1,5 +1,6 @@
 import type { Context } from 'grammy';
 import type { Room } from './chat/room';
+import type { Throttle } from './chat/throttle';
 import { recordProcessed } from './chat/update-log';
 
 export type BotContext = Context & { room: UpdateRoom };
@@ -36,6 +37,14 @@ export class UpdateRoom {
 
 	clock(): number {
 		return this.room.clock();
+	}
+
+	get mentionChunk(): number {
+		return this.room.mentionChunk;
+	}
+
+	get throttle(): Throttle {
+		return this.room.throttle;
 	}
 
 	/** True once a change of this update has committed. */
