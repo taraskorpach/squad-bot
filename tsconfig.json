@@ -1,0 +1,18 @@
+{
+	"compilerOptions": {
+		"target": "es2024",
+		"lib": ["esnext"],
+		"module": "es2022",
+		"moduleResolution": "bundler",
+		"types": [],
+		"noEmit": true,
+		"isolatedModules": true,
+		"verbatimModuleSyntax": true,
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true
+	},
+	"include": ["worker-configuration.d.ts", "src/**/*.ts"],
+	"exclude": ["test"]
+}
