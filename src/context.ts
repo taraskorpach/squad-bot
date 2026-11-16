@@ -34,6 +34,10 @@ export class UpdateRoom {
 		return this.room.write(fn);
 	}
 
+	clock(): number {
+		return this.room.clock();
+	}
+
 	/** True once a change of this update has committed. */
 	get committed(): boolean {
 		return this.#committed;
