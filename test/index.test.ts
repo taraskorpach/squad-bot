@@ -2,6 +2,7 @@ import { reset, runInDurableObject } from 'cloudflare:test';
 import { env, exports } from 'cloudflare:workers';
 import type { Update } from 'grammy/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { probeProblem, probeRequest } from '../scripts/telegram-setup';
 import { type ChatRoom, ROOM_NAME } from '../src/chat/chat-room';
 import { WEBHOOK_PATH } from '../src/telegram';
 import { telegram } from './helpers/telegram';
@@ -152,5 +153,23 @@ describe('a group that adds the bot', () => {
 		expect((await deliver(botAdded())).status).toBe(200);
 
 		expect(telegram.callsTo('leaveChat')).toEqual([]);
+	});
+});
+
+describe("the setup script's probe", () => {
+	function probe(secret: string): Promise<Response> {
+		const url = `https://squad-bot.example.workers.dev${WEBHOOK_PATH}`;
+		return exports.default.fetch(new Request(url, probeRequest(secret)));
+	}
+
+	it('gets a 200 that the script reads as no problem, and the room never sees it', async () => {
+		const response = await probe(env.WEBHOOK_SECRET);
+
+		expect(probeProblem(response.status)).toBeUndefined();
+		expect(await processedIds()).toEqual([]);
+	});
+
+	it('gets a 401 when the Worker holds another secret', async () => {
+		expect((await probe('Zx9_-a-different-secret-of-32-chars')).status).toBe(401);
 	});
 });
