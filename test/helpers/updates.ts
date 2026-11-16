@@ -11,9 +11,15 @@ const BOT_USER: User = {
 	username: BOT.username,
 };
 
+/** The seven people of the chat, and a bot that isn't ours. */
 export const users = {
 	taras: { id: 1001, is_bot: false, first_name: 'Тарас', username: 'taras' },
 	oleg: { id: 1002, is_bot: false, first_name: 'Олег' },
+	andriy: { id: 1003, is_bot: false, first_name: 'Андрій', last_name: 'Коваль' },
+	ihor: { id: 1004, is_bot: false, first_name: 'Ігор' },
+	maks: { id: 1005, is_bot: false, first_name: 'Макс', username: 'maks' },
+	dima: { id: 1006, is_bot: false, first_name: 'Діма' },
+	sasha: { id: 1007, is_bot: false, first_name: 'Саша' },
 	otherBot: { id: 9001, is_bot: true, first_name: 'Other', username: 'other_bot' },
 } satisfies Record<string, User>;
 
@@ -32,6 +38,10 @@ export interface MessageOptions {
 	from?: User;
 	/** Unix seconds, as Telegram sends it; defaults to now. */
 	date?: number;
+	/**
+	 * Sent on behalf of this chat. `from` stays a person, as on a linked channel's forwards (sent by
+	 * Telegram's non-bot account), so a test sees the `sender_chat` check, not the bot check.
+	 */
 	senderChat?: Chat;
 }
 
@@ -64,10 +74,26 @@ export function command(text: string, options: MessageOptions = {}): Update {
 }
 
 export function migrationMessage(toChatId: number, options: MessageOptions = {}): Update {
-	return {
-		update_id: nextId(),
-		message: groupMessage({ migrate_to_chat_id: toChatId }, options),
-	};
+	return serviceMessage({ migrate_to_chat_id: toChatId }, options);
+}
+
+/** A message that reports something instead of saying it: a new title, a pin, a join. */
+export function serviceMessage(
+	fields: Partial<GroupMessage>,
+	options: MessageOptions = {},
+): Update {
+	return { update_id: nextId(), message: groupMessage(fields, options) };
+}
+
+/** "X joined": sent by the one who joined, or by whoever added them. */
+export function joinMessage(joined: User[], options: MessageOptions = {}): Update {
+	const from = options.from ?? joined[0];
+	return serviceMessage({ new_chat_members: joined }, { ...options, from });
+}
+
+/** "X left": sent by the one who left, or by the admin who removed them. */
+export function leaveMessage(left: User, options: MessageOptions = {}): Update {
+	return serviceMessage({ left_chat_member: left }, { ...options, from: options.from ?? left });
 }
 
 export interface TapOptions {
