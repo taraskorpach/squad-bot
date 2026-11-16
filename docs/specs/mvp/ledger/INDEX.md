@@ -16,6 +16,7 @@ Warm cache for forward-propagating learnings. One row per ledger entry with its
 - `docs/specs/_ledger/gotcha-feature-module-state-shared-across-objects.md` — [general] — per-chat memory goes on Room: feature modules are shared by every object
 - `docs/specs/_ledger/gotcha-bundler-tsconfig-misses-node-type-stripping.md` — [general] — type-check files Node runs as .ts under nodenext + erasableSyntaxOnly
 - `docs/specs/_ledger/gotcha-webhook-info-errors-only-after-delivery.md` — [general] — getWebhookInfo shows errors only after a delivery; probe the Worker yourself
+- `docs/specs/_ledger/gotcha-wrangler-action-uses-installed-wrangler.md` — [general] — npm ci before wrangler-action, or it deploys with the latest wrangler 4
 
 ## Principles
 - `principle-actions-commit-through-update-room.md` — [phase 6, 7, 8] — pool actions from a handler commit via ctx.room, or the update isn't recorded

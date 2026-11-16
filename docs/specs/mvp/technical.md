@@ -374,9 +374,9 @@ The side effects shared by callbacks, `/join` and timers. They are written again
   "observability": { "enabled": true }
 }
 ```
-- Secrets are set with `wrangler secret put` and never committed:
+- Secrets are never committed. Production's go to the Worker from `.prod.vars` with `wrangler secret bulk .prod.vars`:
   - `BOT_TOKEN`.
-  - `WEBHOOK_SECRET`: 32+ characters of `A-Za-z0-9_-`, generated once and kept in the password manager. The same value goes to `wrangler secret put` and to the setup script.
+  - `WEBHOOK_SECRET`: 32+ characters of `A-Za-z0-9_-`, generated once and kept in the password manager. It is written once, in `.prod.vars`, which feeds both `wrangler secret bulk` and the setup script, so the two can't differ.
   - `ALLOWED_CHAT_ID`, kept out of the repo so the repo never names the group.
   - `BOT_INFO`: the JSON of `getMe`.
 - `secrets.required` makes `wrangler deploy` fail while any of the four is missing on the Worker (wrangler ≥ 4.77). Production secrets are therefore set before the first deploy (phase 5).
@@ -420,8 +420,11 @@ Local development: a dev bot in a test group, `wrangler dev --tunnel`, then `web
 
 ## CI/CD
 
-- `.github/workflows/check.yml` runs on every push and pull request: `setup-node` from `.nvmrc`, `npm ci`, `npm run check`, `npm test`.
-- `.github/workflows/deploy.yml` runs on push to `main` and on manual dispatch: the same checks, then `cloudflare/wrangler-action@v4` running `deploy` with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from GitHub secrets.
+- `.github/workflows/check.yml` runs on every push except to `main`, on every pull request, and as a reusable workflow (`workflow_call`): `setup-node` from `.nvmrc`, `npm ci`, `npm run check`, `npm test`.
+- `.github/workflows/deploy.yml` runs on push to `main` and on manual dispatch.
+  - Its first job is `check.yml` itself, so a merge runs the checks once.
+  - Then it runs `npm ci` and `cloudflare/wrangler-action@v4` with `command: deploy`, `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. With no `wranglerVersion`, the action uses the installed, locked wrangler.
+  - `concurrency: deploy` without cancelling, so merges deploy in order.
 - npm scripts:
   - `check` = `biome check . && tsc --noEmit && tsc --noEmit -p test && tsc --noEmit -p scripts && node scripts/configure-telegram.ts --help && wrangler types --check`. The `--help` run is the one check that Node loads the script's imports;
   - `test` = `vitest run`;
