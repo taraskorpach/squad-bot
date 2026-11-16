@@ -7,7 +7,7 @@ A group chat of seven friends, Taras among them, who play CS2 and other games to
 To find out whether anyone will play, they tag everyone through another bot, and the answers scatter down the chat: soon nobody can tell who agreed, who said no and who never answered.
 
 ## What we'll build
-- /all tags everyone in the chat except whoever called it, with no cooldown, and the bot counts who calls it most.
+- /all tags everyone in the chat except whoever called it, at most once every 30 seconds, and the bot counts every call to see who calls it most.
 - /domikpisik gets no reply at all; the bot only counts who sends it most.
 - /pool opens a pool for a game and tags everyone. Game, size and start time are optional (CS2, 5 and now by default).
 - Each pool is one message with answer buttons ✅ Граю and ❌ Пас. It updates in place and always shows who plays, who passed and who hasn't answered yet. Typing /join works too.

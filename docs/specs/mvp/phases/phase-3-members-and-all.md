@@ -14,35 +14,50 @@ pr: A
 - `src/members/roster.ts`, `src/members/member-store.ts`, `src/members/member-handlers.ts`
 - `src/members/mentions.ts`, `src/members/all-handlers.ts`
 - `src/stats/event-store.ts`, `src/stats/domikpisik-handlers.ts`
-- `src/texts.ts`, `src/telegram.ts` (the 👋 callback data), `src/bot.ts`, `wrangler.jsonc` (`MENTION_CHUNK`)
-- `test/members/*.test.ts`, `test/stats/domikpisik-handlers.test.ts`
+- `src/texts.ts`, `src/welcome.ts`, `src/telegram.ts` (`HI_CALLBACK`), `src/bot.ts` (the catch-all for unknown callback data)
+- `wrangler.jsonc` (`MENTION_CHUNK`) and the regenerated `worker-configuration.d.ts`
+- `test/members/*.test.ts`, `test/stats/domikpisik-handlers.test.ts`, `test/welcome.test.ts`
 
 ## Implementation guidance
 
 - **Middleware order** in `src/bot.ts`: member learning runs first for every update (an idempotent
   upsert through `ctx.room.write`), then the feature composers. One `Composer` per feature module,
-  exported by name (craft).
+  exported by name (craft). Service messages aren't sightings. `left_chat_member` marks that user
+  out, because its `from` is the leaver, and `new_chat_members` marks the added users in. The
+  rules must hold whichever of a member's `chat_member` update and their service message
+  arrives first (`technical.md` → *Roster*).
 - **Roster and mentions are pure** (`technical.md` → *Pure modules*) and tested on their own with
   tables of users: bots, people who left, shared first names, names with `<` and `&`.
-- **Counting** goes through `ctx.room.commit`, so a redelivered `/all` never counts twice. `events`
-  gets its per-pool unique index now, though only `all` and `domikpisik` exist until phase 6.
+- **Counting** goes through `ctx.room.commit`, so a redelivered `/all` never counts twice.
+  `events` is append-only, and its kinds are a TypeScript union at one `recordEvent` writer.
+  "Once per pool and person" is a rule of the stats queries (phase 9), not a constraint.
 - **`src/texts.ts`** starts here and holds every Ukrainian string from `design.md`, plus a plural
   helper on `Intl.PluralRules('uk')`. Keep it import-free: the setup script imports it in phase 4.
-- **The welcome** is sent when a `my_chat_member` update adds the bot; the ⚠️ line shows only when
-  the new status isn't `administrator`. The 👋 tap (`hi`) upserts the presser and toasts
-  `Запам'ятав 👌`.
+- **The welcome** is built by `welcomeMessage({ isAdmin })` in `src/welcome.ts`, which the setup
+  script uses too.
+  - `welcome.ts` imports only `src/texts.ts` and `src/telegram.ts`, with `.ts` extensions.
+  - It is sent when a `my_chat_member` update adds the bot: `isInChat` false before, true
+    after. So a promotion doesn't greet twice.
+  - The ⚠️ line shows when the new status isn't `administrator`.
+  - The 👋 tap (`HI_CALLBACK`) upserts the presser and toasts `Запам'ятав 👌`.
+  - Unknown callback data gets an empty answer from a catch-all registered last in `src/bot.ts`.
 - **`MENTION_CHUNK`** is read from `env` (a `vars` entry, default `"5"`), so phase 5's live test
-  can change it without touching code.
+  can change it without touching code. Regenerate `worker-configuration.d.ts` with
+  `npm run cf-typegen` after editing `wrangler.jsonc`, or `wrangler types --check` fails CI.
+- **`/all` tags at most once per 30 s** (Taras, review 2026-11-16). Every call is counted, and a
+  repeat inside the window gets a 👌 reaction: Telegram allows 20 messages a minute in a group.
+  The time of the last tagging lives in memory (`technical.md` → *Telegram calls*). A stale
+  `/all`, more than 10 minutes late, is only counted.
 
 ## Deliverables
 
-- [ ] Migration 2: `members` and `events` tables, with the per-pool unique index
-- [ ] Roster rules (pure): membership from messages, taps and `chat_member` updates; bots excluded; names refreshed
-- [ ] Member learning: every message and tap upserts its sender; joins and leaves update `in_chat`
+- [ ] Migration 2: `members` and the append-only `events` table, with no unique index and no CHECK on `kind`
+- [ ] Roster rules (pure): `isInChat` from `chat_member` updates; ordinary messages and taps mark their sender in, `left_chat_member` marks that user out, `new_chat_members` the added users in; bots excluded; names refreshed
+- [ ] Member learning: every ordinary message and tap upserts its sender; joins and leaves update `in_chat` in either arrival order
 - [ ] Mentions (pure): escaped `tg://user` links, shared first names told apart, chunks of `MENTION_CHUNK`
-- [ ] `/all`: replies to the caller with chunked mentions of every member except the caller (or the empty-state text) and records an `all` event
+- [ ] `/all`: records an `all` event every time; replies with chunked mentions of every member except the caller (or the empty-state text), at most once per 30 s, a repeat getting 👌; a stale call is only counted
 - [ ] `/domikpisik`: no reply; records a `domikpisik` event, once per update
-- [ ] Welcome: on the bot being added, the welcome with the 👋 button and, when not an admin, the ⚠️ line; 👋 registers the presser with its toast
+- [ ] Welcome: `welcomeMessage({ isAdmin })` from `src/welcome.ts`, sent when the bot is added (`isInChat` false → true); 👋 registers the presser with its toast; unknown callback data gets an empty answer
 
 ## Phase-local notes
 

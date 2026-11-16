@@ -14,9 +14,9 @@ shape: harness-first
 - `package.json`, `package-lock.json`, `.nvmrc`, `tsconfig.json`, `biome.json`, `.gitignore`, `.dev.vars.example`
 - `wrangler.jsonc`, `worker-configuration.d.ts`
 - `vitest.config.mts`, `test/tsconfig.json`, `test/setup.ts`, `test/helpers/telegram.ts`, `test/helpers/updates.ts`
-- `src/index.ts`, `src/telegram.ts`, `src/bot.ts`, `src/context.ts`
-- `src/chat/chat-room.ts`, `src/chat/schema.ts`
-- `test/index.test.ts`, `test/chat/chat-room.test.ts`, `test/helpers/helpers.test.ts`
+- `src/index.ts`, `src/telegram.ts` (`WEBHOOK_PATH`, `ALLOWED_UPDATES`, `chatIdOf`, `isInChat`), `src/bot.ts`, `src/context.ts`
+- `src/chat/chat-room.ts`, `src/chat/room.ts`, `src/chat/schema.ts`
+- `test/index.test.ts`, `test/telegram.test.ts`, `test/chat/chat-room.test.ts`, `test/helpers/helpers.test.ts`
 - `.github/workflows/check.yml`
 
 ## Implementation guidance
@@ -32,24 +32,34 @@ them is `research/2026-11-16-wave-2-cloudflare-fit.md` and the craft snapshot.
 - **Harness first** (the shape): the Telegram fake and the update builders come before the Worker
   and get a self-test, so every later test reads like the chat it simulates. Wire the tests into
   CI in this phase: a harness CI never runs proves nothing.
-- **The Worker** stays framework-free: secret check, chat id, allow-list, `leaveChat` for foreign
-  groups, RPC to the object. It never answers 200 for an update that failed before its commit.
+- **The Worker** stays framework-free: secret check, `chatIdOf`, allow-list, `leaveChat` (through
+  grammY's `Api`) for groups that add the bot, and RPC to the one object by `ROOM_NAME`. It
+  answers 500 exactly when the object rejects, and only the failure policy decides that.
 - **The object** owns everything else. The serial queue is a small promise chain: each task runs
   to the end, and one task's failure doesn't break the chain. Dedupe is `processed_updates`,
   written in the same transaction as the update's first non-idempotent change through
-  `ctx.room.commit`; `ctx.room.write` is for idempotent writes.
-- **grammY** is built once per object instance with `botInfo`, capped auto-retry and an HTTP
-  timeout of 10 s. This phase registers no features: a test proves that an update flows through
-  the bot and that `/x@otherbot` is ignored.
+  `ctx.room.commit`, which returns its callback's result. `ctx.room.write` is for idempotent
+  writes. Both sit on `Room` (`src/chat/room.ts`), which the alarm uses without a grammY context.
+- **The failure policy** is the heart of this phase (`technical.md` → *Processing one update*).
+  An error answers 500 only before anything was committed or sent, never for a permanent
+  Telegram error, and only until the update has failed 3 times over 5 minutes. Telegram retries
+  a failing message for 24 h and holds the chat's later messages behind it (wave 1), so an
+  uncapped 500 turns one bug into a dead chat.
+- **grammY** is built lazily, once per object instance, from the object's `features` field. It
+  gets `botInfo`, capped auto-retry, an HTTP timeout of 10 s and a transformer that marks the
+  update as delivered. This phase ships no features. Its tests register test features through
+  the `features` seam (one that commits, one that calls Telegram, one that throws) and prove the
+  failure policy, the stale flag, and that `/x@otherbot` is ignored.
 
 ## Deliverables
 
 - [ ] Scaffold: npm project with TypeScript 6, Biome, `.nvmrc` 26 and `wrangler.jsonc` (`ChatRoom` through `exports`, compatibility date 2026-11-16 with the `temporal` flag, observability on); `npm run check` passes on an empty Worker
 - [ ] Test harness: `@cloudflare/vitest-plugin` config with fake secrets, an MSW network that records and answers Telegram API calls, and update builders, with a self-test
-- [ ] Worker: `POST /webhook` answers 401 for a missing or wrong secret and 404 for other paths, ignores private chats, leaves foreign groups, and routes the allowed chat to its `ChatRoom`
-- [ ] Migrations: an ordered list applied once in the object's constructor and tracked in `_sql_schema_migrations`; migration 1 creates `processed_updates`
-- [ ] Once and in order: the serial queue runs each update to the end before the next; a redelivered update changes nothing; a failure before the commit makes the Worker answer 500, a Telegram failure after it still 200
-- [ ] grammY inside the object: built once with `botInfo`, auto-retry capped at 2 retries and 5 s with server errors rethrown, `/cmd@otherbot` ignored
+- [ ] Worker: `POST /webhook` answers 401 for a missing or wrong secret and 404 for other paths, finds the chat with `chatIdOf` (a test per `ALLOWED_UPDATES` type), ignores other chats, leaves groups that add it (`isInChat` false → true), logs a migration of the allowed chat, and routes the allowed chat to the one `ChatRoom`
+- [ ] Migrations: an ordered list applied once in the object's constructor, each migration with its `_sql_schema_migrations` row in one `transactionSync`; migration 1 creates `processed_updates` and `failed_updates`; settings checked at construction
+- [ ] Once and in order: the serial queue runs each update to the end before the next, a redelivered update changes nothing, and `ctx.room.commit` records the update id with the first change and returns its result
+- [ ] Failure policy: a 500 only when nothing was committed or sent and the error isn't a permanent Telegram error, until the update has failed 3 times over 5 minutes (`failed_updates`); every other failure is logged and answered 200
+- [ ] grammY inside the object: built lazily from the `features` seam with `botInfo`, auto-retry capped at 2 retries and 5 s with server errors rethrown, the 10 s timeout and the delivered marker; bots and channel identities ignored, messages over 10 minutes old flagged stale, `/cmd@otherbot` ignored
 - [ ] CI: `.github/workflows/check.yml` runs `npm run check` and `npm test` on pushes and pull requests
 
 ## Phase-local notes
@@ -59,5 +69,8 @@ them is `research/2026-11-16-wave-2-cloudflare-fit.md` and the craft snapshot.
 - Storage is isolated per test **file**: give each object test its own chat id (craft).
 - Build the grammY bot after the MSW network is enabled: grammY captures `fetch` in its constructor (craft).
 - `crypto.subtle.timingSafeEqual` needs inputs of equal length: compare lengths first.
+- `failed_updates` is written in its own transaction in the catch, after the failed one has
+  rolled back. If storage itself is down, that write fails too and the update stays a 500, which
+  is right for an outage.
 - Don't name the class `Chat` (grammY's type), don't put object migrations in a root
   `migrations/` folder (D1's default), and don't use `PRAGMA user_version` (unsupported) (craft).

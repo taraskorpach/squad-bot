@@ -1,6 +1,5 @@
 ---
-needs: [1]
-needs-deployed: [4]
+needs: [1, 4]
 code: false
 gate: outward
 shape: cutover-and-runbook
@@ -18,16 +17,23 @@ shape: cutover-and-runbook
 ## Implementation guidance
 
 The runbook is `README.md` (phase 4). Every item is ticked with its evidence. Order:
-1. Add the production bot to the chat; make it an admin with only the pin right.
-2. `telegram:configure discover` → the chat id and `BOT_INFO`.
+1. Add the production bot to the chat as an admin with only the pin right. In a basic group this
+   most likely upgrades the chat to a supergroup with a new `-100…` id.
+2. `telegram:configure discover --env .prod.vars` → the supergroup's id and `BOT_INFO`.
+   - Check first that it prints the production bot's `@username`.
+   - If the chat is still a basic group, turn on a supergroup-only setting (for example, making
+     chat history visible to new members) and run `discover` again.
 3. `wrangler secret put` for `BOT_TOKEN`, `WEBHOOK_SECRET`, `ALLOWED_CHAT_ID`, `BOT_INFO`.
-4. PR A is merged and deployed (this phase's `needs-deployed`).
-5. `telegram:configure webhook https://<worker>.workers.dev`, then `welcome`.
+   Generate `WEBHOOK_SECRET` once in the password manager, and put the same value in `.prod.vars`.
+4. Merge PR A. Its deploy fails while any of the four secrets is missing (`secrets.required`),
+   which is why it comes after step 3. Mark phase 4 deployed once the workflow is green.
+5. `telegram:configure webhook https://<worker>.workers.dev --env .prod.vars`, then `welcome`.
 
 **The mention test** settles wave 0's open question: does a sixth mention in one message notify?
 Deploy once with `wrangler deploy --var MENTION_CHUNK:10`, run `/all`, and ask who got a
 notification. If all six did, the next code PR sets `MENTION_CHUNK` to 10 in `wrangler.jsonc`;
-otherwise 5 stays. Either way, redeploy from `main` afterwards so the live setting matches the repo.
+otherwise 5 stays. Either way, run the deploy workflow on `main` afterwards (manual dispatch) so the
+live setting matches the repo.
 
 **The CPU check** reads "CPU Time per execution" in the dashboard for the Worker and the object
 after a day of use (wave 2 §2: 10 ms per request on Free, never measured for grammY).
@@ -35,8 +41,9 @@ after a day of use (wave 2 §2: 10 ms per request on Free, never measured for gr
 ## Deliverables
 
 - [ ] Gate: Taras agrees to go live in the chat
-- [ ] Bot added to the chat as an admin with only the pin right; chat id found with `discover` (evidence: date)
-- [ ] Production secrets set: `BOT_TOKEN`, `WEBHOOK_SECRET`, `ALLOWED_CHAT_ID`, `BOT_INFO` (evidence: date)
+- [ ] Bot added to the chat as an admin with only the pin right; the supergroup's id found with `discover` (evidence: date and the chat type)
+- [ ] Production secrets set before PR A merges: `BOT_TOKEN`, `WEBHOOK_SECRET` (the same value in `.prod.vars`), `ALLOWED_CHAT_ID`, `BOT_INFO` (evidence: date)
+- [ ] PR A merged and its deploy workflow green; phase 4 marked deployed (evidence: the workflow run)
 - [ ] Webhook set and the command menu visible in the chat (evidence: date)
 - [ ] Welcome posted and all seven members known (evidence: an `/all` that tags six)
 - [ ] Mention test done and `MENTION_CHUNK` settled (evidence: who was notified, the value)

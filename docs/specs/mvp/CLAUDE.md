@@ -1,6 +1,6 @@
 ---
 created: 2026-11-16T13:56:26+02:00
-updated: 2026-11-16T17:10:18+02:00
+updated: 2026-11-16T18:41:39+02:00
 status: draft
 area: [bot, infra]
 domain: [mentions, pools, stats]
