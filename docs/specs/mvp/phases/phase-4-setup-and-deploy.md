@@ -63,11 +63,11 @@ pr: A
 
 ## Deliverables
 
-- [ ] The group command menu: Ukrainian descriptions in `src/texts.ts` (`commandMenu`), `/domikpisik` left out, built into the `setMyCommands` payload in `scripts/telegram-setup.ts`, its only reader, so `src/telegram.ts` stays import-free
-- [ ] Script split: the pure `scripts/telegram-setup.ts` tested in workerd, and a Node shell `scripts/configure-telegram.ts` typed by `scripts/tsconfig.json` (`nodenext`, `erasableSyntaxOnly`; `tsc --noEmit -p scripts` and a `--help` run under Node in `check`) that takes `--env <file>`, calls Telegram through grammY's `Api` and prints the target bot's `@username` first
-- [ ] `telegram:configure discover`: prints `BOT_INFO` and every group in pending updates with id, title and type, following `migrate_to_chat_id`; consumes none, and refuses while a webhook is set
-- [ ] `telegram:configure webhook <worker-url>`: first checks that the Worker at `<origin>/webhook` answers the secret, then sets the webhook with the secret, `ALLOWED_UPDATES` and pending updates dropped, then the group command menu, and fails when `getWebhookInfo` reports an error
-- [ ] `telegram:configure welcome`: once a webhook is set and reports no error, posts `welcomeMessage` to `ALLOWED_CHAT_ID`, with the ⚠️ line when `getChatMember` says the bot isn't an admin
+- [x] The group command menu: Ukrainian descriptions in `src/texts.ts` (`commandMenu`), `/domikpisik` left out, built into the `setMyCommands` payload in `scripts/telegram-setup.ts`, its only reader, so `src/telegram.ts` stays import-free
+- [x] Script split: the pure `scripts/telegram-setup.ts` tested in workerd, and a Node shell `scripts/configure-telegram.ts` typed by `scripts/tsconfig.json` (`nodenext`, `erasableSyntaxOnly`; `tsc --noEmit -p scripts` and a `--help` run under Node in `check`) that takes `--env <file>`, calls Telegram through grammY's `Api` and prints the target bot's `@username` first
+- [x] `telegram:configure discover`: prints `BOT_INFO` and every group in pending updates with id, title and type, following `migrate_to_chat_id`; consumes none, and refuses while a webhook is set
+- [x] `telegram:configure webhook <worker-url>`: first checks that the Worker at `<origin>/webhook` answers the secret, then sets the webhook with the secret, `ALLOWED_UPDATES` and pending updates dropped, then the group command menu, and fails when `getWebhookInfo` reports an error
+- [x] `telegram:configure welcome`: once a webhook is set and reports no error, posts `welcomeMessage` to `ALLOWED_CHAT_ID`, with the ⚠️ line when `getChatMember` says the bot isn't an admin
 - [ ] `.github/workflows/deploy.yml`: on push to `main` and on manual dispatch, the checks, then `wrangler deploy` with the Cloudflare secrets
 - [ ] `README.md`: the go-live runbook (production values in `.prod.vars`, one `WEBHOOK_SECRET`, secrets before merging PR A, a supergroup id) and local development with the dev bot
 
