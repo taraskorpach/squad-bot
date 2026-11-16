@@ -1,7 +1,14 @@
-import type { Chat, Update } from 'grammy/types';
+import type { Chat, Update, WebhookInfo } from 'grammy/types';
 import { describe, expect, it } from 'vitest';
-import { COMMAND_MENU, groupsIn } from '../../scripts/telegram-setup';
-import { HI_CALLBACK } from '../../src/telegram';
+import {
+	COMMAND_MENU,
+	deliveryError,
+	groupsIn,
+	probeProblem,
+	probeRequest,
+	webhookSettings,
+} from '../../scripts/telegram-setup';
+import { ALLOWED_UPDATES, HI_CALLBACK } from '../../src/telegram';
 import {
 	botAdded,
 	CHANNEL,
@@ -90,5 +97,91 @@ describe('groupsIn', () => {
 			title: 'Тест 2',
 			type: 'supergroup',
 		});
+	});
+});
+
+const WORKER = 'https://squad-bot.example.workers.dev';
+const SECRET = 'Zx9_-abcdefghijklmnopqrstuvwxyz01';
+
+describe('webhookSettings', () => {
+	it("points Telegram at the Worker's webhook with the secret, the update types and a clean start", () => {
+		expect(webhookSettings(WORKER, SECRET)).toEqual({
+			url: `${WORKER}/webhook`,
+			secret_token: SECRET,
+			allowed_updates: ALLOWED_UPDATES,
+			drop_pending_updates: true,
+		});
+	});
+
+	it.each([`${WORKER}/`, `${WORKER}/some/path?x=1`])(
+		'keeps only the origin of %s, since the Worker answers at /webhook alone',
+		(workerUrl) => {
+			expect(webhookSettings(workerUrl, SECRET).url).toBe(`${WORKER}/webhook`);
+		},
+	);
+
+	it.each([
+		['http://squad-bot.example.workers.dev', "The Worker's URL must start with https://"],
+		['squad-bot.example.workers.dev', 'Not a URL: squad-bot.example.workers.dev'],
+	])('refuses %s', (workerUrl, error) => {
+		expect(() => webhookSettings(workerUrl, SECRET)).toThrow(error);
+	});
+
+	it.each([
+		['shorter than 32 characters', 'a'.repeat(31)],
+		['longer than 256', 'a'.repeat(257)],
+		['with a character Telegram refuses', `${'a'.repeat(32)}!`],
+	])('refuses a secret %s, without printing it', (_case, secret) => {
+		expect(() => webhookSettings(WORKER, secret)).toThrow(
+			'WEBHOOK_SECRET must be 32 to 256 characters of A-Z, a-z, 0-9, _ and -',
+		);
+	});
+});
+
+describe('deliveryError', () => {
+	const info: WebhookInfo = {
+		url: `${WORKER}/webhook`,
+		has_custom_certificate: false,
+		pending_update_count: 0,
+	};
+
+	it('is none while Telegram has no failed delivery to report', () => {
+		expect(deliveryError(info)).toBeUndefined();
+	});
+
+	it('says when and how the last delivery failed', () => {
+		const failed = {
+			...info,
+			last_error_date: 1_794_860_000,
+			last_error_message: 'Wrong response from the webhook: 401 Unauthorized',
+		};
+
+		expect(deliveryError(failed)).toBe(
+			"Telegram's last delivery failed at 2026-11-16T20:13:20.000Z: Wrong response from the webhook: 401 Unauthorized",
+		);
+	});
+});
+
+describe('probeRequest', () => {
+	it('is the POST Telegram will send, with the secret and an update that has no chat', () => {
+		expect(probeRequest(SECRET)).toEqual({
+			method: 'POST',
+			headers: { 'X-Telegram-Bot-Api-Secret-Token': SECRET, 'Content-Type': 'application/json' },
+			body: '{"update_id":0}',
+		});
+	});
+});
+
+describe('probeProblem', () => {
+	it('is none when the Worker takes the update', () => {
+		expect(probeProblem(200)).toBeUndefined();
+	});
+
+	it.each([
+		[401, 'The Worker refused the secret: its WEBHOOK_SECRET is a different one'],
+		[404, 'Nothing answers at this URL: check it, and that the Worker is deployed'],
+		[500, 'The Worker answered 500, not 200'],
+	])('explains a %i', (status, problem) => {
+		expect(probeProblem(status)).toBe(problem);
 	});
 });
