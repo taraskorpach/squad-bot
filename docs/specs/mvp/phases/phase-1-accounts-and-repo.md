@@ -40,8 +40,8 @@ The production bot is **not** added to the friends' chat here: that is phase 5.
 - [x] GitHub repo created and `main` pushed (evidence: repo URL) — https://github.com/taraskorpach/squad-bot (private), main pushed 2026-11-16
 - [x] Cloudflare account on the Free plan, no card, with its workers.dev subdomain and `wrangler login` done on Taras's machine (evidence: account id and subdomain) — account 1789a8ef1be95cbb0bc15700dc72926d, subdomain taraskorpach03.workers.dev, wrangler login done 2026-11-16
 - [x] Production bot created in @BotFather, token stored outside the repo (evidence: @username) — @pisikcs_bot, 2026-11-16
-- [ ] Bot added to a test group of at least two accounts, as an admin with only the pin right (evidence: group name)
-- [ ] `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` saved as GitHub Actions secrets (evidence: date)
+- [x] Bot added to a test group of at least two accounts, as an admin with only the pin right (evidence: group name) — Pisikcs Test, 2026-11-16
+- [x] `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` saved as GitHub Actions secrets (evidence: date) — both set 2026-11-16 (gh secret list)
 
 ## Phase-local notes
 
