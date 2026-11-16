@@ -74,6 +74,7 @@ describe('the object at construction', () => {
 	it.each([
 		['BOT_INFO', 'not json', 'BOT_INFO must be the JSON of getMe'],
 		['ALLOWED_CHAT_ID', 'the chat', 'ALLOWED_CHAT_ID must be an integer chat id'],
+		['MENTION_CHUNK', '0', 'MENTION_CHUNK must be an integer of at least 1'],
 	])('refuses a bad %s by name', async (name, value, message) => {
 		await runInDurableObject(freshRoom(), (_room, state) => {
 			expect(() => new ChatRoom(state, { ...env, [name]: value })).toThrow(message);

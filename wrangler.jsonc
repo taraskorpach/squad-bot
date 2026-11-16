@@ -11,6 +11,10 @@
 	"durable_objects": {
 		"bindings": [{ "name": "CHAT_ROOM", "class_name": "ChatRoom" }]
 	},
+	"vars": {
+		// Mentions per message, until a live test shows whether a sixth one still notifies.
+		"MENTION_CHUNK": "5"
+	},
 	"secrets": {
 		"required": ["BOT_TOKEN", "WEBHOOK_SECRET", "ALLOWED_CHAT_ID", "BOT_INFO"]
 	},

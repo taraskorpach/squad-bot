@@ -1,6 +1,11 @@
 import { env } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
-import { parseAllowedChatId, parseBotInfo, readRoomSettings } from '../src/settings';
+import {
+	parseAllowedChatId,
+	parseBotInfo,
+	parseMentionChunk,
+	readRoomSettings,
+} from '../src/settings';
 
 describe('parseAllowedChatId', () => {
 	it('reads a supergroup id', () => {
@@ -34,11 +39,25 @@ describe('parseBotInfo', () => {
 	});
 });
 
+describe('parseMentionChunk', () => {
+	it('reads how many mentions go in one message', () => {
+		expect(parseMentionChunk('5')).toBe(5);
+		expect(parseMentionChunk('1')).toBe(1);
+	});
+
+	it.each(['', '0', '-1', '2.5', ' 5', 'five', '1e1'])('refuses %j', (raw) => {
+		expect(() => parseMentionChunk(raw)).toThrow(
+			new Error('MENTION_CHUNK must be an integer of at least 1'),
+		);
+	});
+});
+
 describe('readRoomSettings', () => {
-	it('reads the chat id and the bot from the environment', () => {
+	it('reads the chat id, the bot and the mention chunk from the environment', () => {
 		expect(readRoomSettings(env)).toEqual({
 			allowedChatId: Number(env.ALLOWED_CHAT_ID),
 			botInfo: JSON.parse(env.BOT_INFO),
+			mentionChunk: 5,
 		});
 	});
 });
