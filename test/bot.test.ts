@@ -130,6 +130,32 @@ describe('the gate before the features', () => {
 	});
 });
 
+describe('a tap no feature answers', () => {
+	it('gets an empty answer, so its button stops spinning', async () => {
+		const stub = await roomWith([]);
+		const unknown = tap('p:1:in');
+
+		await stub.handleUpdate(unknown);
+
+		expect(telegram.callsTo('answerCallbackQuery')).toEqual([
+			{ callback_query_id: unknown.callback_query?.id },
+		]);
+	});
+
+	it('is left alone when a feature answered it: a tap is answered once', async () => {
+		const answering = new Composer<BotContext>();
+		answering.callbackQuery('known', (ctx) => ctx.answerCallbackQuery('готово'));
+		const stub = await roomWith([answering]);
+		const known = tap('known');
+
+		await stub.handleUpdate(known);
+
+		expect(telegram.callsTo('answerCallbackQuery')).toEqual([
+			{ callback_query_id: known.callback_query?.id, text: 'готово' },
+		]);
+	});
+});
+
 describe('the Telegram client', () => {
 	afterEach(() => {
 		vi.useRealTimers();

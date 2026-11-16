@@ -4,11 +4,12 @@ import type { UserFromGetMe } from 'grammy/types';
 import type { BotContext, UpdateRoom } from './context';
 import { tagAll } from './members/all-handlers';
 import { learningMembers } from './members/member-handlers';
+import { welcoming } from './members/welcome-handlers';
 import { countDomikpisik } from './stats/domikpisik-handlers';
 import { API_TIMEOUT_SECONDS, personSending, sentAt } from './telegram';
 
 /** Every feature, in the order an update meets them. */
-export const FEATURES: readonly Middleware<BotContext>[] = [tagAll, countDomikpisik];
+export const FEATURES: readonly Middleware<BotContext>[] = [welcoming, tagAll, countDomikpisik];
 
 /**
  * Capped: unbounded defaults would hold the chat's queue and sleep past the webhook.
@@ -49,6 +50,8 @@ export function createBot(options: BotOptions): Bot<BotContext> {
 		flaggingStale,
 	);
 	bot.use(...options.features);
+	// Last, for a tap no feature answered: without an answer its button keeps spinning.
+	bot.on('callback_query', (ctx) => ctx.answerCallbackQuery());
 	return bot;
 }
 
