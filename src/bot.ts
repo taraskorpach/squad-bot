@@ -2,6 +2,7 @@ import { autoRetry } from '@grammyjs/auto-retry';
 import { Bot, type Middleware, type Transformer } from 'grammy';
 import type { UserFromGetMe } from 'grammy/types';
 import type { BotContext, UpdateRoom } from './context';
+import { learningMembers } from './members/member-handlers';
 import { API_TIMEOUT_SECONDS, personSending } from './telegram';
 
 /** Every feature, in the order an update meets them. */
@@ -39,7 +40,12 @@ export function createBot(options: BotOptions): Bot<BotContext> {
 	bot.api.config.use(autoRetry(RETRY_LIMITS));
 	// Installed last, so it is the outermost transformer and sees each call's final result.
 	bot.api.config.use(markingDelivered(options.onDelivered));
-	bot.use(attachingRoom(options.currentRoom), ignoringBotsAndChannels, flaggingStale);
+	bot.use(
+		attachingRoom(options.currentRoom),
+		learningMembers,
+		ignoringBotsAndChannels,
+		flaggingStale,
+	);
 	bot.use(...options.features);
 	return bot;
 }
