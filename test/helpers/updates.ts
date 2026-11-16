@@ -94,6 +94,7 @@ export function tap(data: string, options: TapOptions = {}): Update {
 }
 
 type MemberStatus = ChatMember['status'];
+type StatusChange = { from: MemberStatus; to: MemberStatus };
 
 export interface ChangeOptions {
 	chatId?: number;
@@ -104,23 +105,23 @@ export interface ChangeOptions {
 /** A `chat_member` update: someone's status changed from one to the other. */
 export function memberChange(
 	user: User,
-	change: { from: MemberStatus; to: MemberStatus },
+	change: StatusChange,
 	options: ChangeOptions = {},
 ): Update {
 	return { update_id: nextId(), chat_member: memberUpdated(user, change, options) };
 }
 
-/** A `my_chat_member` update adding the bot to a group as a pin-only admin. */
-export function botAdded(options: ChangeOptions = {}): Update {
-	const change = { from: 'left', to: 'administrator' } as const;
+/** A `my_chat_member` update: the bot's own status changed. */
+export function botChange(change: StatusChange, options: ChangeOptions = {}): Update {
 	return { update_id: nextId(), my_chat_member: memberUpdated(BOT_USER, change, options) };
 }
 
-function memberUpdated(
-	user: User,
-	change: { from: MemberStatus; to: MemberStatus },
-	options: ChangeOptions,
-) {
+/** The bot added to a group as a pin-only admin. */
+export function botAdded(options: ChangeOptions = {}): Update {
+	return botChange({ from: 'left', to: 'administrator' }, options);
+}
+
+function memberUpdated(user: User, change: StatusChange, options: ChangeOptions) {
 	return {
 		chat: options.chat ?? supergroup(options.chatId ?? CHAT_ID),
 		from: options.by ?? users.taras,
