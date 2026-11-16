@@ -343,7 +343,7 @@ The side effects shared by callbacks, `/join` and timers. They are written again
 
 - `allowed_updates`: `["message", "callback_query", "chat_member", "my_chat_member"]`. `chat_member` arrives only because it is listed and the bot is an admin.
 - Retries: `bot.api.config.use(autoRetry({ maxRetryAttempts: 2, maxDelaySeconds: 5, rethrowInternalServerErrors: true, rethrowHttpErrors: true }))`.
-  - The worst case stays well inside one update's processing. Unbounded defaults would hold the serial queue and sleep past the webhook (wave 2 §3).
+  - The worst case is about 15 s for one call that keeps getting 429s: auto-retry sleeps before it checks the attempt count, so it can sleep three times (phase 2 preflight). `rethrowHttpErrors` is what bounds network errors: without it their backoff ignores `maxRetryAttempts`. Unbounded defaults would hold the serial queue and sleep past the webhook (wave 2 §3).
   - Whatever still fails is handled by the failure policy, and for cards and start pings by timer retries.
 - Commands: grammY's `bot.command()` accepts `/cmd` and `/cmd@ourbot` and ignores `/cmd@otherbot` (wave 1).
 - HTTP client timeout: set grammY's `client.timeoutSeconds` to 10. Its default of 500 could hold the queue for minutes (wave 2 §3).

@@ -12,7 +12,7 @@ pr: A
 **Files to touch:**
 - `src/telegram.ts` (`COMMANDS`)
 - `scripts/configure-telegram.ts` (the Node shell), `scripts/telegram-setup.ts` (pure), `scripts/tsconfig.json`
-- `tsconfig.json` (allow `.ts` imports), `biome.json` (ignore `worker-configuration.d.ts`), `.gitignore` (`.prod.vars`)
+- `tsconfig.json` (allow `.ts` imports), `.gitignore` (`.prod.vars`)
 - `package.json` (`telegram:configure`; `tsc --noEmit -p scripts` in `check`)
 - `.github/workflows/deploy.yml`
 - `README.md`

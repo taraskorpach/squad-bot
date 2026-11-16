@@ -14,9 +14,10 @@ shape: harness-first
 - `package.json`, `package-lock.json`, `.nvmrc`, `tsconfig.json`, `biome.json`, `.gitignore`, `.dev.vars.example`
 - `wrangler.jsonc`, `worker-configuration.d.ts`
 - `vitest.config.mts`, `test/tsconfig.json`, `test/setup.ts`, `test/helpers/telegram.ts`, `test/helpers/updates.ts`
-- `src/index.ts`, `src/telegram.ts` (`WEBHOOK_PATH`, `ALLOWED_UPDATES`, `chatIdOf`, `isInChat`), `src/bot.ts`, `src/context.ts`
-- `src/chat/chat-room.ts`, `src/chat/room.ts`, `src/chat/schema.ts`
-- `test/index.test.ts`, `test/telegram.test.ts`, `test/chat/chat-room.test.ts`, `test/helpers/helpers.test.ts`
+- `src/index.ts`, `src/telegram.ts` (`WEBHOOK_PATH`, `ALLOWED_UPDATES`, `chatIdOf`, `isInChat`), `src/bot.ts`, `src/context.ts`, `src/settings.ts`
+- `src/chat/chat-room.ts`, `src/chat/room.ts`, `src/chat/schema.ts`, `src/chat/serial-queue.ts`, `src/chat/update-log.ts`, `src/chat/failure-policy.ts`
+- `test/index.test.ts`, `test/telegram.test.ts`, `test/settings.test.ts`, `test/bot.test.ts`, `test/helpers/helpers.test.ts`
+- `test/chat/chat-room.test.ts`, `test/chat/schema.test.ts`, `test/chat/serial-queue.test.ts`, `test/chat/failure-policy.test.ts`
 - `.github/workflows/check.yml`
 
 ## Implementation guidance
