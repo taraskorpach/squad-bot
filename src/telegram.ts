@@ -3,6 +3,9 @@ import type { Chat, ChatMember, Update, User } from 'grammy/types';
 
 export const WEBHOOK_PATH = '/webhook';
 
+/** Where Telegram puts the webhook's secret: the Worker checks it, the setup script's probe sends it. */
+export const WEBHOOK_SECRET_HEADER = 'X-Telegram-Bot-Api-Secret-Token';
+
 /** The update types the webhook asks for. Each must carry a chat that `chatOf` finds. */
 export const ALLOWED_UPDATES = [
 	'message',

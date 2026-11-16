@@ -2,11 +2,16 @@ import { Api } from 'grammy';
 import type { ChatMemberUpdated, Update } from 'grammy/types';
 import { ROOM_NAME } from './chat/chat-room';
 import { parseAllowedChatId } from './settings';
-import { API_TIMEOUT_SECONDS, chatOf, isGroup, isInChat, WEBHOOK_PATH } from './telegram';
+import {
+	API_TIMEOUT_SECONDS,
+	chatOf,
+	isGroup,
+	isInChat,
+	WEBHOOK_PATH,
+	WEBHOOK_SECRET_HEADER,
+} from './telegram';
 
 export { ChatRoom } from './chat/chat-room';
-
-const SECRET_HEADER = 'X-Telegram-Bot-Api-Secret-Token';
 
 export default {
 	async fetch(request, env): Promise<Response> {
@@ -39,7 +44,7 @@ async function route(update: Update, env: Env): Promise<Response> {
 }
 
 function carriesSecret(request: Request, secret: string): boolean {
-	const given = request.headers.get(SECRET_HEADER);
+	const given = request.headers.get(WEBHOOK_SECRET_HEADER);
 	if (given === null) return false;
 	const encoder = new TextEncoder();
 	const [a, b] = [encoder.encode(given), encoder.encode(secret)];
