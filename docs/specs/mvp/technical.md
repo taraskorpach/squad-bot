@@ -25,7 +25,7 @@ The review of 2026-11-16 (`reviews/2026-11-16-failure-paths-and-go-live.md`) res
 
 ```
 Telegram ── POST /webhook ──▶ Worker  (src/index.ts)
-                              │ secret check · chatIdOf · allow-list
+                              │ secret check · chatOf · allow-list
                               ▼ RPC handleUpdate(update)
                      ChatRoom Durable Object, the one named ROOM_NAME  (src/chat/chat-room.ts)
                        serial queue ──▶ grammY bot (src/bot.ts)
@@ -55,7 +55,7 @@ The Worker is framework-free: it authenticates, finds the chat and forwards. All
 | Chat id ≠ `ALLOWED_CHAT_ID` | `200`. If it is a `my_chat_member` update that adds the bot to a group or supergroup (`isInChat` false before, true after), first `leaveChat` through grammY's `Api`, best effort |
 | Allowed chat | `await env.CHAT_ROOM.getByName(ROOM_NAME).handleUpdate(update)` → `200`; a rejection → `500`, and Telegram redelivers |
 
-- `chatIdOf(update)` in `src/telegram.ts` reads the chat id of each type in `ALLOWED_UPDATES`: `message.chat.id`, `callback_query.message.chat.id`, `chat_member.chat.id` and `my_chat_member.chat.id`. A test checks that every allowed type yields one, so adding a type can't silently drop its updates.
+- `chatOf(update)` in `src/telegram.ts` gives the chat of any update type that has one (a tap's chat is its message's), and the Worker routes on its id. A test checks that every type in `ALLOWED_UPDATES` yields one, so adding a type can't silently drop its updates.
 - A message in the allowed chat that carries `migrate_to_chat_id` is logged at error level: the group was upgraded, and `ALLOWED_CHAT_ID` must change.
 - Any other method or path answers `404`.
 
@@ -198,8 +198,10 @@ Nothing stores message text. `pools.game` is the word the author typed.
 None of these imports grammY or touches storage; time and randomness come in as arguments.
 
 ### Telegram shapes (`src/telegram.ts`, phases 2–4; import-free)
-- `WEBHOOK_PATH` and `ALLOWED_UPDATES` (phase 2), `HI_CALLBACK` (phase 3), `COMMANDS` (phase 4).
-- `chatIdOf(update)`: the chat id of any allowed update type, or none.
+- `WEBHOOK_PATH` and `ALLOWED_UPDATES` (phase 2), `HI_CALLBACK` (phase 3), `WEBHOOK_SECRET_HEADER` (phase 4).
+- `chatOf(update)`: the chat of any update type that has one, or none. The Worker routes on it, and the setup script's `discover` lists groups with it (phase 4).
+- `isGroup(chat)`: a group or a supergroup (phase 4, moved from `src/index.ts`).
+- `isAdmin(member)`: an administrator or the creator. It decides the welcome's ⚠️ line for the bot and the setup script (phase 4).
 - `isInChat(member)`: true for `member`, `administrator`, `creator`, or `restricted` with `is_member`. "Added" means false before and true after; the Worker and the welcome use the same test.
 - `personSending(update)`: the person behind a message or a tap, or none for bots and `sender_chat` messages (anonymous admins, channels, a linked channel's forwards, whose `from` is Telegram's own non-bot account). The gate and the roster share it.
 
@@ -390,16 +392,21 @@ The side effects shared by callbacks, `/join` and timers. They are written again
   - It parses arguments, calls Telegram through grammY's `Api`, and prints.
   - Tests never import it.
   - Every subcommand first prints the target bot's `@username` (from `getMe`), so the dev and production bots can't be confused.
-- Its pure parts live in `scripts/telegram-setup.ts`: finding groups in `getUpdates` results, and building the `setWebhook` and `setMyCommands` payloads.
-  - It imports only `src/telegram.ts`, `src/texts.ts` and `src/welcome.ts`, with explicit `.ts` extensions, which Node's type stripping needs.
-  - It is tested in workerd.
-- `scripts/tsconfig.json` types `scripts/` with Node's types.
+- Its pure parts live in `scripts/telegram-setup.ts`:
+  - finding groups in `getUpdates` results;
+  - building the `setWebhook` and `setMyCommands` payloads. The command menu's descriptions are copy, in `texts.commandMenu`;
+  - the probe's request, and what the Worker's answer to it means.
+
+  It imports only the leaves, with explicit `.ts` extensions, which Node's type stripping needs: `src/telegram.ts`, `src/texts.ts` and `src/welcome.ts`. It is tested in workerd.
+- `scripts/tsconfig.json` types `scripts/` with Node's types, with `module: nodenext` and `erasableSyntaxOnly`, so tsc rejects what Node's type stripping rejects. Only a real run shows that Node loads the imports, so `check` also runs `--help`, which calls nothing.
+- Settings come from the `--env` file, and each subcommand reads only what it needs: `BOT_TOKEN` always, `WEBHOOK_SECRET` for `webhook`, `ALLOWED_CHAT_ID` for `welcome`.
+- Output is English: the script is the operator's tool.
 
 | Subcommand | Does |
 |---|---|
-| `discover` | Prints `BOT_INFO`, then reads pending updates with `getUpdates` (no offset, so nothing is consumed). Lists every group seen in them, of any update type, with id, title and type. Follows `migrate_to_chat_id` to the supergroup and marks groups that aren't supergroups. Works only while no webhook is set. If a group is missing, post a message in it and run it again |
-| `webhook <worker-url>` | `setWebhook(<url>/webhook, secret_token, allowed_updates, drop_pending_updates: true)`, then `setMyCommands` for group chats, then `getWebhookInfo`. Fails when that reports `last_error_message` |
-| `welcome` | Posts `welcomeMessage({ isAdmin })` to `ALLOWED_CHAT_ID`, with `isAdmin` from `getChatMember` for the bot |
+| `discover` | Prints `BOT_INFO`. Refuses while a webhook is set, since `getUpdates` can't run then. Reads pending updates with `getUpdates`, with no offset, so nothing is consumed: one page, the oldest 100. Lists every group seen in them, of any update type, with id, title and type. Follows `migrate_to_chat_id` to the supergroup and marks groups that aren't supergroups. If a group is missing, post a message in it and run it again |
+| `webhook <worker-url>` | Builds `<origin>/webhook` with `new URL`, https only, and checks `WEBHOOK_SECRET`: 32–256 characters of `A-Za-z0-9_-`. Probes first: a POST of `{"update_id":0}` with the secret header must get 200, since the Worker ignores an update with no chat. Otherwise it stops: 401 means the Worker's secret differs, 404 means nothing is deployed there. `getWebhookInfo` shows errors only after a delivery, and none happens before someone writes. Then `setWebhook(url, secret_token, allowed_updates, drop_pending_updates: true)`, then `setMyCommands` for group chats, then `getWebhookInfo`. Fails when that reports `last_error_message` |
+| `welcome` | Refuses until a webhook is set, and while `getWebhookInfo` reports an error: otherwise nobody hears 👋. Posts `welcomeMessage({ isAdmin })` to `ALLOWED_CHAT_ID`, with `isAdmin` from `getChatMember` for the bot |
 
 Go-live order (phase 5):
 1. Add the bot to the chat as an admin with only the pin right.
@@ -416,7 +423,7 @@ Local development: a dev bot in a test group, `wrangler dev --tunnel`, then `web
 - `.github/workflows/check.yml` runs on every push and pull request: `setup-node` from `.nvmrc`, `npm ci`, `npm run check`, `npm test`.
 - `.github/workflows/deploy.yml` runs on push to `main` and on manual dispatch: the same checks, then `cloudflare/wrangler-action@v4` running `deploy` with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from GitHub secrets.
 - npm scripts:
-  - `check` = `biome check . && tsc --noEmit && tsc --noEmit -p test && tsc --noEmit -p scripts && wrangler types --check`;
+  - `check` = `biome check . && tsc --noEmit && tsc --noEmit -p test && tsc --noEmit -p scripts && node scripts/configure-telegram.ts --help && wrangler types --check`. The `--help` run is the one check that Node loads the script's imports;
   - `test` = `vitest run`;
   - `dev` = `wrangler dev`;
   - `deploy` = `wrangler deploy`;
@@ -475,8 +482,8 @@ scripts/
   tsconfig.json          Node types for scripts/                           phase 4
 src/
   index.ts          Worker: webhook, routing, foreign chats                  phase 2
-  telegram.ts       WEBHOOK_PATH, ALLOWED_UPDATES, chatIdOf, isInChat,
-                    personSending, HI_CALLBACK, COMMANDS (import-free)       phases 2, 3, 4
+  telegram.ts       WEBHOOK_PATH, ALLOWED_UPDATES, chatOf, isGroup, isInChat,
+                    isAdmin, personSending, HI_CALLBACK (import-free)        phases 2, 3, 4
   texts.ts          every Ukrainian string, plural helper (import-free)      phase 3+
   welcome.ts        welcomeMessage({ isAdmin }); imports only the leaves     phase 3
   kyiv-time.ts      zone, wall time → instant, labels, month window          phases 6, 9

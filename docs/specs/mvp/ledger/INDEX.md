@@ -14,6 +14,8 @@ Warm cache for forward-propagating learnings. One row per ledger entry with its
 - `docs/specs/_ledger/gotcha-grammy-composer-command-returns-branch.md` — [general] — register the Composer, not what .command() returns: it drops the filter
 - `docs/specs/_ledger/gotcha-do-sql-multi-statement-bindings.md` — [general] — DO SQLite: multi-statement exec takes no bindings; one exec per statement
 - `docs/specs/_ledger/gotcha-feature-module-state-shared-across-objects.md` — [general] — per-chat memory goes on Room: feature modules are shared by every object
+- `docs/specs/_ledger/gotcha-bundler-tsconfig-misses-node-type-stripping.md` — [general] — type-check files Node runs as .ts under nodenext + erasableSyntaxOnly
+- `docs/specs/_ledger/gotcha-webhook-info-errors-only-after-delivery.md` — [general] — getWebhookInfo shows errors only after a delivery; probe the Worker yourself
 
 ## Principles
 - `principle-actions-commit-through-update-room.md` — [phase 6, 7, 8] — pool actions from a handler commit via ctx.room, or the update isn't recorded
