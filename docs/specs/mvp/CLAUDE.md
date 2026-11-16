@@ -1,7 +1,7 @@
 ---
 created: 2026-11-16T13:56:26+02:00
 updated: 2026-11-16T18:41:39+02:00
-status: draft
+status: active
 area: [bot, infra]
 domain: [mentions, pools, stats]
 scope: [feature]
