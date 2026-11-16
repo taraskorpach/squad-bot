@@ -4,11 +4,12 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"check": "biome check . && tsc --noEmit && tsc --noEmit -p test && wrangler types --check",
+		"check": "biome check . && tsc --noEmit && tsc --noEmit -p test && tsc --noEmit -p scripts && node scripts/configure-telegram.ts --help && wrangler types --check",
 		"test": "vitest run",
 		"dev": "wrangler dev",
 		"deploy": "wrangler deploy",
-		"cf-typegen": "wrangler types"
+		"cf-typegen": "wrangler types",
+		"telegram:configure": "node scripts/configure-telegram.ts"
 	},
 	"dependencies": {
 		"@grammyjs/auto-retry": "^2.0.2",
@@ -18,6 +19,7 @@
 		"@biomejs/biome": "^2.6.8",
 		"@cloudflare/vitest-plugin": "^1.8.3",
 		"@msw/cloudflare": "^0.2.0",
+		"@types/node": "^26.6.6",
 		"msw": "^3.0.6",
 		"typescript": "~6.0.3",
 		"vitest": "^5.1.0",

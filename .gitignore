@@ -6,5 +6,7 @@ coverage/
 .wrangler/
 .dev.vars*
 !.dev.vars.example
+# the setup script's production values
+.prod.vars
 .env*
 !.env.example
