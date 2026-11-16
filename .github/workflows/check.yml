@@ -2,7 +2,13 @@ name: check
 
 on:
   push:
+    # A push to main runs these checks inside deploy.yml, before it deploys.
+    branches-ignore: [main]
   pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
 
 jobs:
   check:
