@@ -6,6 +6,7 @@
 		"moduleResolution": "bundler",
 		"types": [],
 		"noEmit": true,
+		"allowImportingTsExtensions": true,
 		"isolatedModules": true,
 		"verbatimModuleSyntax": true,
 		"strict": true,

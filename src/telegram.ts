@@ -13,6 +13,9 @@ export const ALLOWED_UPDATES = [
 
 export type AllowedUpdate = (typeof ALLOWED_UPDATES)[number];
 
+/** The welcome's 👋 button. Pool buttons carry `p:{pool}:{action}`. */
+export const HI_CALLBACK = 'hi';
+
 /** grammY's default of 500 s would let one hung call hold the chat's queue for minutes. */
 export const API_TIMEOUT_SECONDS = 10;
 

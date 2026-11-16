@@ -65,7 +65,7 @@ pr: A
 - [x] Member learning: every ordinary message and tap upserts its sender; joins and leaves update `in_chat` in either arrival order
 - [x] Mentions (pure): escaped `tg://user` links, shared first names told apart, chunks of `MENTION_CHUNK`
 - [x] `/all`: records an `all` event every time; replies with chunked mentions of every member except the caller (or the empty-state text), at most once per 30 s, a repeat getting 👌; a stale call is only counted
-- [ ] `/domikpisik`: no reply; records a `domikpisik` event, once per update
+- [x] `/domikpisik`: no reply; records a `domikpisik` event, once per update
 - [ ] Welcome: `welcomeMessage({ isAdmin })` from `src/welcome.ts`, sent when the bot is added (`isInChat` false → true); 👋 registers the presser with its toast; unknown callback data gets an empty answer
 
 ## Phase-local notes
