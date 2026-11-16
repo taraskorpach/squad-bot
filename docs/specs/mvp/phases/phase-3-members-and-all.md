@@ -62,7 +62,7 @@ pr: A
 
 - [x] Migration 2: `members` and the append-only `events` table, with no unique index and no CHECK on `kind`
 - [x] Roster rules (pure): `isInChat` from `chat_member` updates; ordinary messages and taps mark their sender in, `left_chat_member` marks that user out, `new_chat_members` the added users in; bots excluded; names refreshed
-- [ ] Member learning: every ordinary message and tap upserts its sender; joins and leaves update `in_chat` in either arrival order
+- [x] Member learning: every ordinary message and tap upserts its sender; joins and leaves update `in_chat` in either arrival order
 - [ ] Mentions (pure): escaped `tg://user` links, shared first names told apart, chunks of `MENTION_CHUNK`
 - [ ] `/all`: records an `all` event every time; replies with chunked mentions of every member except the caller (or the empty-state text), at most once per 30 s, a repeat getting 👌; a stale call is only counted
 - [ ] `/domikpisik`: no reply; records a `domikpisik` event, once per update
