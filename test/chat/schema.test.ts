@@ -26,9 +26,12 @@ describe('migrations', () => {
 			expect(appliedIds(state.storage)).toEqual(MIGRATIONS.map((migration) => migration.id));
 			expect(tableNames(state.storage)).toEqual([
 				'_sql_schema_migrations',
+				'answers',
 				'events',
 				'failed_updates',
 				'members',
+				'pool_messages',
+				'pools',
 				'processed_updates',
 				'sqlite_sequence',
 			]);
