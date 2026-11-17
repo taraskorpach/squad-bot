@@ -40,7 +40,7 @@ Product decisions come from Taras (in `seed.md`, or in this spec's create sessio
 | Start-time ping | At the start time, tag the players once, not the bench | No ping; a ping 10 minutes before | Taras: "Можна" |
 | Auto-close | Three hours after the start time, or after opening for a pool "now" | At the end of the evening | One rule, no guessing when an evening ends (Taras: "через 3 год це ок") |
 | `/all` | Tags everyone except the caller; every call counted; tags at most once per 30 s, and a repeat inside the window gets a 👌 reaction | Tagging the caller too; no limit at all; a cooldown that drops calls | The caller already knows, and the count is part of the joke (Taras: "Ні"). Telegram allows a bot 20 messages a minute in a group, so unlimited tagging under a leaderboard would silence the pool cards and pings; the window keeps every call counted (Taras, review 2026-11-16) |
-| Stats | Five boards (`/all`, `/domikpisik`, Граю, opened pools, Пас) plus total joins, for this month and all time; Граю, Пас and opened pools counted once per pool and person, by the stats queries over an append-only event record | All-time only; counting every tap; a unique index that drops repeats when they are written | Monthly boards stay fresh (Taras: "Так"); toggling must not inflate a board (*create*); the record keeps every answer, so a new board or rule needs no table rebuild (review) |
+| Stats | Five boards (`/all`, `/domikpisik`, Граю, opened pools, Пас) plus total joins, for all time; Граю, Пас and opened pools counted once per pool and person, by the stats queries over an append-only event record | This month beside all time (built in phase 9, taken out on 2026-11-17); counting every tap; a unique index that drops repeats when they are written | "Taras — 3 / 3" read as noise while the bot is new (Taras: "просто робимо за весь час"); toggling must not inflate a board (*create*); the record keeps every answer, so a monthly board can come back with no table rebuild (review) |
 | Bot rights | A group admin with only the pin right | Turning privacy mode off | Admin bots receive every message; privacy changes need the bot removed and re-added (wave 0, telegram-platform §3) |
 | The old tag bot | Leaves the chat once `/all` works here | Naming our command differently | Both would answer a bare `/all` (seed) |
 | What is stored | Members, pools, answers and an event record; never message text | Keeping messages | Privacy (seed) |
@@ -117,7 +117,7 @@ No reply, ever. The call is counted for `/stats`.
 Lists open pools with their time, fill and a link to each card.
 
 ### `/stats`
-Replies with five leaderboards, each showing this month's count and the all-time count.
+Replies with five leaderboards, each person's count for all time.
 
 ## Screens and copy
 
@@ -150,6 +150,8 @@ The ⚠️ line appears when the bot isn't an admin at the moment the welcome is
   The label is recomputed on every render, and open cards are re-rendered at Kyiv midnight, so
   "сьогодні" and "завтра" stay true.
 - `✅ Грають ({n}/{size}): {names | —}` always; `🪑 Лава`, `❌ Пас` and `⏳ Ще не відповіли` only when not empty.
+- Players and the bench are in line order and passes in the order they came. "Ще не відповіли" is in name order, so the same pool always renders the same card (phase 6).
+- A start already a day behind, for a pool still open after midnight, shows its date: `16.11 о 23:30`.
 - ✅ Граю uses the green button style and ❌ Пас the red one (Bot API 9.4).
 
 ### Pool card, complete with a bench
@@ -183,7 +185,7 @@ The ⚠️ line appears when the bot isn't an admin at the moment the welcome is
 ### Messages under a card (each a reply to the card)
 | When | Text |
 |---|---|
-| A pool opens | `📢 {author} збирає {game} {зараз \| на 21:00 \| на завтра, 01:00} — хто грає? {mentions}`; more mentions follow as `📢 {mentions}`. `{author}` is plain text, so the author isn't pinged |
+| A pool opens | `📢 {author} збирає {game} {зараз \| на 21:00 \| на завтра, 01:00} — хто грає? {mentions}`; more mentions follow as `📢 {mentions}`. `{author}` is plain text, so the author isn't pinged. With nobody else known, it goes out without mentions |
 | Players reach the size, first time | `🎮 Склад на {game} зібрано: {mentions}.` plus ` Старт о {HH:MM}.` when a future start time is set |
 | A bench player moves up | `{mention}, звільнилось місце — ти граєш у {game}.` |
 | 🎲 is used | `🎲 Жереб кинуто. У склад: {mentions}. На лаву: {mentions}.`, listing the whole squad and the whole bench |
@@ -206,27 +208,27 @@ A repeat within 30 s of the last tagging gets a 👌 reaction instead.
 
 ### `/stats`
 ```
-📊 Статистика · листопад / за весь час
+📊 Статистика за весь час
 
 📢 /all
-1. Тарас — 4 / 31
-2. Олег — 2 / 17
+1. Тарас — 31
+2. Олег — 17
 
 🏠 /domikpisik
-1. Андрій — 9 / 120
+1. Андрій — 120
 
-✅ Граю · разом 12 / 143
-1. Ігор — 5 / 40
+✅ Граю · разом 143
+1. Ігор — 40
 
 🎮 Відкриває пули
-1. Тарас — 3 / 25
+1. Тарас — 25
 
 ❌ Пас
-1. Макс — 2 / 30
+1. Макс — 30
 ```
-- Each row is `{place}. {name} — {this month} / {all time}`, sorted by this month, then all time, then name.
-- People with zero in both are left out. An empty board reads `— поки порожньо`.
-- The month name is the nominative Ukrainian month in Kyiv time.
+- Each row is `{place}. {name} — {count}`, sorted by the count, then name.
+  Equal counts share a place, and the places they fill are skipped: `1.`, `1.`, `3.` (phase 9).
+- A board lists only people with a count. An empty board reads `— поки порожньо`.
 
 ### Toasts (answers to button taps)
 | Tap | Toast |

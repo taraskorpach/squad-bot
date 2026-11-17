@@ -23,8 +23,9 @@ The runbook is `README.md` (phase 4). Every item is ticked with its evidence. Or
    - Check first that it prints the production bot's `@username`.
    - If the chat is still a basic group, turn on a supergroup-only setting (for example, making
      chat history visible to new members) and run `discover` again.
-3. `wrangler secret put` for `BOT_TOKEN`, `WEBHOOK_SECRET`, `ALLOWED_CHAT_ID`, `BOT_INFO`.
-   Generate `WEBHOOK_SECRET` once in the password manager, and put the same value in `.prod.vars`.
+3. Fill in all four keys in `.prod.vars`, with `WEBHOOK_SECRET` generated once in the password
+   manager. Then run `npx wrangler secret bulk .prod.vars`, so the Worker and the setup script read
+   the same values. The first time, wrangler offers to create the Worker: say yes (README → *Go live*).
 4. Merge PR A. Its deploy fails while any of the four secrets is missing (`secrets.required`),
    which is why it comes after step 3. Mark phase 4 deployed once the workflow is green.
 5. `telegram:configure webhook https://<worker>.workers.dev --env .prod.vars`, then `welcome`.
@@ -33,7 +34,8 @@ The runbook is `README.md` (phase 4). Every item is ticked with its evidence. Or
 Deploy once with `wrangler deploy --var MENTION_CHUNK:10`, run `/all`, and ask who got a
 notification. If all six did, the next code PR sets `MENTION_CHUNK` to 10 in `wrangler.jsonc`;
 otherwise 5 stays. Either way, run the deploy workflow on `main` afterwards (manual dispatch) so the
-live setting matches the repo.
+live setting matches the repo. If the sixth didn't notify, the pools' one-message announcements need
+chunks too (ledger: `decision-announcements-in-one-message.md`).
 
 **The CPU check** reads "CPU Time per execution" in the dashboard for the Worker and the object
 after a day of use (wave 2 §2: 10 ms per request on Free, never measured for grammY).

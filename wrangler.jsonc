@@ -1,0 +1,24 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "squad-bot",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-11-16",
+	// Temporal is on by default only from 2026-12-01.
+	"compatibility_flags": ["temporal"],
+	"exports": {
+		"ChatRoom": { "type": "durable-object", "storage": "sqlite" }
+	},
+	"durable_objects": {
+		"bindings": [{ "name": "CHAT_ROOM", "class_name": "ChatRoom" }]
+	},
+	"vars": {
+		// Mentions per message, until a live test shows whether a sixth one still notifies.
+		"MENTION_CHUNK": "5"
+	},
+	"secrets": {
+		"required": ["BOT_TOKEN", "WEBHOOK_SECRET", "ALLOWED_CHAT_ID", "BOT_INFO"]
+	},
+	"observability": {
+		"enabled": true
+	}
+}

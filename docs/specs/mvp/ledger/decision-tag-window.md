@@ -15,4 +15,7 @@ Taras's answer to the one question the review of 2026-11-16 put to him.
   - 🔔 works the same way per pool; a repeat gets the toast `Щойно нагадав — спробуй трохи згодом`.
 - **Why B:** the joke (the count) stays whole, and the group limit can't silence the pools.
 - **Mechanism:** the time of the last tagging is kept in memory. An evicted object has been idle for over a minute, so a lost value can only mean the window has passed.
+  - Built in phase 3 as `ctx.room.throttle.claim(key, now, windowMs)` (`src/chat/throttle.ts`), one per `Room`: never in a feature module, which every object shares (`docs/specs/_ledger/gotcha-feature-module-state-shared-across-objects.md`).
+  - `/all` claims the key `all`. `TAG_WINDOW_MS` sits in `src/members/all-handlers.ts` until 🔔 needs it too; 🔔 claims one key per pool.
+  - Any `/all` reply opens the window, the "nobody to tag yet" one included.
 - **Where:** `design.md` → *Decisions* (`/all`), *Toasts*, *Edge cases* (🔔); phases 3 and 7.

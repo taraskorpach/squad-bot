@@ -25,7 +25,7 @@ The review of 2026-11-16 (`reviews/2026-11-16-failure-paths-and-go-live.md`) res
 
 ```
 Telegram ── POST /webhook ──▶ Worker  (src/index.ts)
-                              │ secret check · chatIdOf · allow-list
+                              │ secret check · chatOf · allow-list
                               ▼ RPC handleUpdate(update)
                      ChatRoom Durable Object, the one named ROOM_NAME  (src/chat/chat-room.ts)
                        serial queue ──▶ grammY bot (src/bot.ts)
@@ -55,7 +55,7 @@ The Worker is framework-free: it authenticates, finds the chat and forwards. All
 | Chat id ≠ `ALLOWED_CHAT_ID` | `200`. If it is a `my_chat_member` update that adds the bot to a group or supergroup (`isInChat` false before, true after), first `leaveChat` through grammY's `Api`, best effort |
 | Allowed chat | `await env.CHAT_ROOM.getByName(ROOM_NAME).handleUpdate(update)` → `200`; a rejection → `500`, and Telegram redelivers |
 
-- `chatIdOf(update)` in `src/telegram.ts` reads the chat id of each type in `ALLOWED_UPDATES`: `message.chat.id`, `callback_query.message.chat.id`, `chat_member.chat.id` and `my_chat_member.chat.id`. A test checks that every allowed type yields one, so adding a type can't silently drop its updates.
+- `chatOf(update)` in `src/telegram.ts` gives the chat of any update type that has one (a tap's chat is its message's), and the Worker routes on its id. A test checks that every type in `ALLOWED_UPDATES` yields one, so adding a type can't silently drop its updates.
 - A message in the allowed chat that carries `migrate_to_chat_id` is logged at error level: the group was upgraded, and `ALLOWED_CHAT_ID` must change.
 - Any other method or path answers `404`.
 
@@ -84,15 +84,20 @@ The storage and Telegram handle shared by every write path, updates and alarms a
 - `room.tx(fn: (sql) => T): T` runs `ctx.storage.transactionSync` and returns `fn`'s result. Reading, deciding and writing all happen inside `fn`, and the decision comes out.
 - `room.write(fn)` does the same for idempotent writes: member upserts, `message_id`, `card_render`, `pool_messages`.
 - It also carries `room.clock`, `room.random`, `room.chatId`, and `room.api`: the bot's `Api` with auto-retry and the delivered marker.
+- And the object's memory: `room.mentionChunk` (the `MENTION_CHUNK` setting) and `room.throttle`, which remembers when each keyed action last ran (`/all`'s 30 s window; 🔔's per pool in phase 7). It lives on the room because feature modules are shared by every object in the isolate.
 - `ctx.room` (`src/context.ts`) wraps the room for one update:
   - `ctx.room.commit(fn)` is `room.tx((sql) => { recordUpdateOnce(sql); return fn(sql); })`.
   - `recordUpdateOnce` is an `INSERT OR IGNORE` into `processed_updates`, so a second commit in the same update is harmless.
   - It carries the update's flags: `committed`, `delivered` and `stale`.
+- `RoomAccess` (phase 6) is what an action needs of a room: `tx`, `write`, `read`, `clock`, `random`, `chatId`, `mentionChunk` and `api`.
+  - `Room` and `ctx.room` both satisfy it. On `ctx.room`, `tx` is `commit`, so an action called from a handler records the update with its change.
+  - The alarm passes the plain `Room`.
+- After a commit, every Telegram call goes through `attempt(label, call)` (`src/chat/attempt.ts`). A failure is logged, the next call still goes, and the call's result comes back, or nothing.
 
 ### Processing one update
 1. If `processed_updates` holds the `update_id`, stop: it is a redelivery.
 2. Run `bot.handleUpdate(update)`. The bot has `botInfo: JSON.parse(env.BOT_INFO)`, so there is no `getMe` call.
-3. Member learning runs first (phase 3). Then:
+3. Member learning runs first (phase 3), as soon as `ctx.room` is attached and before the gate below, so the roster refuses bots and `sender_chat` messages itself (`personSending`). Then:
    - Messages and taps from a bot, or with `sender_chat` (anonymous admins, channel identities), stop.
    - A message older than 10 minutes by `message.date` is marked `stale`. Features count it where they count, and do nothing else.
 4. Handlers follow **decide and write, then call Telegram**:
@@ -117,6 +122,8 @@ Never answer 200 for a failed update the way grammY's Deno Workers guide does (`
 ## Data model (object SQLite)
 
 Times are epoch milliseconds, UTC. Tables are snake_case plurals (Cloudflare's rules).
+
+An event's `at` is when the person acted: a command's message `date`, or the room's clock for a tap, which carries no date. The boards count all time today, but a board cut by time would place a late `/all` when it was made.
 
 The schema holds identity and structure. Tunable domain rules (event kinds, size bounds, counting rules) live in code, for two reasons:
 - SQLite can't change a CHECK without rebuilding the table.
@@ -195,13 +202,16 @@ Nothing stores message text. `pools.game` is the word the author typed.
 None of these imports grammY or touches storage; time and randomness come in as arguments.
 
 ### Telegram shapes (`src/telegram.ts`, phases 2–4; import-free)
-- `WEBHOOK_PATH` and `ALLOWED_UPDATES` (phase 2), `HI_CALLBACK` (phase 3), `COMMANDS` (phase 4).
-- `chatIdOf(update)`: the chat id of any allowed update type, or none.
+- `WEBHOOK_PATH` and `ALLOWED_UPDATES` (phase 2), `HI_CALLBACK` (phase 3), `WEBHOOK_SECRET_HEADER` (phase 4).
+- `chatOf(update)`: the chat of any update type that has one, or none. The Worker routes on it, and the setup script's `discover` lists groups with it (phase 4).
+- `isGroup(chat)`: a group or a supergroup (phase 4, moved from `src/index.ts`).
+- `isAdmin(member)`: an administrator or the creator. It decides the welcome's ⚠️ line for the bot and the setup script (phase 4).
 - `isInChat(member)`: true for `member`, `administrator`, `creator`, or `restricted` with `is_member`. "Added" means false before and true after; the Worker and the welcome use the same test.
+- `personSending(update)`: the person behind a message or a tap, or none for bots and `sender_chat` messages (anonymous admins, channels, a linked channel's forwards, whose `from` is Telegram's own non-bot account). The gate and the roster share it.
 
 ### Roster (`src/members/roster.ts`, phase 3)
 - A member is a non-bot user. Every `chat_member` update sets `in_chat` from `isInChat` of the new status.
-- An ordinary message or a tap marks its sender as in the chat and refreshes their name.
+- An ordinary message or a tap marks its sender as in the chat and refreshes their name. An ordinary message carries one of grammY's content kinds (text, photo, sticker, poll, …); one without any is a service message.
 - Service messages aren't sightings:
   - `new_chat_members` marks the added users as in.
   - `left_chat_member` marks that user as out. Its `from` is the person who left, so it must not count as a sighting.
@@ -224,8 +234,6 @@ None of these imports grammY or touches storage; time and randomness come in as 
   - `сьогодні о HH:MM` or `завтра о HH:MM`, relative to the render time;
   - `dd.MM о HH:MM` on closed cards.
 - `nextMidnight(now)`: the next Kyiv midnight, when a label can change.
-- `monthWindow(now)`: from the first day of the current Kyiv month at 00:00 to the first day of the next, as `[startMs, endMs)`. SQLite can't do this itself: its `localtime` is the host's UTC, and it has no IANA zones.
-- The month's name: `Intl.DateTimeFormat('uk', { month: 'long' })` in Kyiv, which gives the standalone nominative ("листопад").
 
 ### `/pool` arguments (`src/pools/pool-args.ts`, phase 6)
 - Tokens split on whitespace:
@@ -275,12 +283,13 @@ None of these imports grammY or touches storage; time and randomness come in as 
   - Anything else gets an empty `answerCallbackQuery` from a catch-all registered last in `src/bot.ts`.
 
 ### Stats (`src/stats/stats-queries.ts`, `src/stats/stats-format.ts`, phase 9)
-- Boards, per kind, within the month window and without it:
+- Boards, per kind, for all time (Taras, 2026-11-17: no month for now):
   - `all` and `domikpisik` count every event.
-  - `join`, `pass` and `pool_open` count once per pool and person, placed by that pair's first event (`MIN(at)`), so toggling can't inflate a board.
+  - `join`, `pass` and `pool_open` count once per pool and person, so toggling can't inflate a board.
   - Total joins: distinct (pool, person) pairs of `join`.
-- Names come from `members`, including people who left.
-- Sort by month count, then all-time count, then name. Leave out rows that are zero in both.
+- Names come from `members`, including people who left. `displayNames` tells them apart among
+  every member the bot knows (`knownMembers`), so a namesake who left still adds the initial.
+- Sort by the count, then name. Equal counts share a place (1, 1, 3).
 
 ### Timer planner (`src/pools/pool-timers.ts`, phase 8)
 - `nextDue(pools, now)` (pure): the earliest of these, over the open pools:
@@ -291,13 +300,21 @@ None of these imports grammY or touches storage; time and randomness come in as 
 
   A pool with `timer_retry_at` set is due no earlier than that time.
 
-## Pool actions (`src/pools/pool-actions.ts`, phases 6–8)
+## Pool actions (`src/pools/pool-actions.ts`, `src/pools/pool-card.ts`, phases 6–8)
 
-The side effects shared by callbacks, `/join` and timers. They are written against `Room`, never against a grammY context, because `alarm()` has none.
+The side effects shared by callbacks, `/join` and timers. They are written against `RoomAccess`, never against a grammY context, because `alarm()` has none.
 
-- `applyAnswer(room, poolId, userId, choice)` commits the answer and its event. It returns what changed: the toast, move-ups, and whether the squad just completed.
-- `refreshCard(room, poolId)` renders the card and edits it when it changed.
-- `postCard(room, poolId)` posts the card and the opening tag message, records both in `pool_messages`, and stores `message_id`.
+- `openPool(room, request)` commits the pool, the author's answer and the `pool_open` and `join` events, then calls `postCard`.
+- `applyAnswer(room, poolId, userId, choice, at)` commits the answer and its event, and the squad's flag the first time it fills. It returns the decision: the outcome for the toast, the move-ups, and whether the squad just completed. For a closed or missing pool it returns that instead.
+- `showAnswer(room, poolId, decision)` refreshes the card, then posts the squad's message and each move-up under it.
+- `commitDraw(room, poolId, userId)` and `showDraw` (phase 7): the draw and the renumbered line in one commit, checked as stored; then the card and the draw's message.
+- `closePool(room, poolId, by)` is `commitClose` (only an open pool, `closed_by` set) then `showClose`. `showClose` turns the card final, and for the author tags the others who said Граю. The ✖️ tap answers its toast between the two halves.
+- The tap handler dispatches through a `Record` of every pool action, so a new button can't go unhandled. 🔔 runs in the handler, since it needs `ctx.room.throttle` and commits nothing.
+- In `pool-card.ts`:
+  - `cardState(sql, poolId)` reads what a card shows: the pool, its lineup, and everyone on it, leavers included.
+  - `refreshCard(room, poolId)` renders the card and edits it when it changed.
+  - `postCard(room, poolId, replyTo?)` posts the card and the opening tag messages, records them all in `pool_messages`, and stores `message_id`.
+  - `postUnderCard(room, poolId, cardId, text)` posts one message under the card and records it.
 - `closePool(room, poolId, reason)` (phase 7) commits the close and renders the final card. When the author closes, it tags everyone else who said Граю.
 - The announcements: squad complete, a move-up, the draw.
 - A tap on a card of a pool whose `message_id` is NULL adopts the tapped message as the card: the card was posted, but its id was never stored.
@@ -313,6 +330,11 @@ The side effects shared by callbacks, `/join` and timers. They are written again
 - **Arming.**
   - After a commit that changes timing (a pool opened or closed, a ping or a retry recorded), compute `nextDue` with synchronous SQL. Call `setAlarm` (or `deleteAlarm`) without awaiting, in the same synchronous block, so the alarm commits with the change (alarm operations follow the storage rules, wave 2 §4).
   - At the end of every queued task, compare `getAlarm()` with `nextDue` and set it when they differ. An alarm lost for any reason comes back with the next update.
+  - In code (phase 8):
+    - `RoomAccess.arm()` does the first, and `openPool` and `commitClose` call it.
+    - `Room.armIfChanged()` does the second, from `ChatRoom` after every update and alarm.
+    - The planner and the runner reach `chat/` as `TIMERS` (`{ nextDue, run }`) from `src/bot.ts`. `ChatRoom.timers` is a test seam.
+  - A missing card is due at once, so `openPool`'s arming wakes the object right after the card's send. If the card did go out, the alarm finds nothing due and re-arms.
 - **`alarm()`** runs in the queue, each due action in its own `try`:
   - A missing card: `postCard`.
   - A start ping: commit `start_pinged = 1`, then tag the players (not the bench), with the fill when the squad isn't complete. No ping when nobody plays. A ping more than 15 minutes late is skipped and marked done.
@@ -321,7 +343,7 @@ The side effects shared by callbacks, `/join` and timers. They are written again
 - **Retries.**
   - A failing action sets `timer_attempts + 1` and `timer_retry_at = now + 1, 2 or 4 min` in its own write. Failing means its commit failed, or, for the card and the start ping, the Telegram call after the commit failed. For the start ping, the flag goes back to 0.
   - A success clears both columns.
-  - After 3 attempts the action is given up and logged: the card stays missing, the ping is skipped, or the pool is closed by a minimal update.
+  - After the fourth try (once, then after 1, 2 and 4 minutes) the action is given up and logged. The card stays missing: its used-up tries keep it from coming due. The ping is marked done. The pool is closed by a minimal update. A retry holds back all of the pool's actions (phase 8).
   - Other messages that are sent once aren't retried (`design.md` → *Edge cases*).
 - **Unexpected errors.** On any unexpected error in `alarm()`, call `setAlarm(clock() + 60_000)` and skip the end-of-task re-arm to a past time. After 6 failed retries, alarms stop until the next `setAlarm` (wave 2 §4). Without the retry columns, a failing action would point the alarm at the past and fire in a loop, burning the free plan's daily requests and rows within minutes.
 - Alarms fire at least once and can be up to a minute late. The flags and `status` commit before the Telegram calls, so a second firing does nothing.
@@ -343,13 +365,15 @@ The side effects shared by callbacks, `/join` and timers. They are written again
 
 - `allowed_updates`: `["message", "callback_query", "chat_member", "my_chat_member"]`. `chat_member` arrives only because it is listed and the bot is an admin.
 - Retries: `bot.api.config.use(autoRetry({ maxRetryAttempts: 2, maxDelaySeconds: 5, rethrowInternalServerErrors: true, rethrowHttpErrors: true }))`.
-  - The worst case stays well inside one update's processing. Unbounded defaults would hold the serial queue and sleep past the webhook (wave 2 §3).
+  - The worst case is about 15 s for one call that keeps getting 429s: auto-retry sleeps before it checks the attempt count, so it can sleep three times (phase 2 preflight). `rethrowHttpErrors` is what bounds network errors: without it their backoff ignores `maxRetryAttempts`. Unbounded defaults would hold the serial queue and sleep past the webhook (wave 2 §3).
   - Whatever still fails is handled by the failure policy, and for cards and start pings by timer retries.
 - Commands: grammY's `bot.command()` accepts `/cmd` and `/cmd@ourbot` and ignores `/cmd@otherbot` (wave 1).
 - HTTP client timeout: set grammY's `client.timeoutSeconds` to 10. Its default of 500 could hold the queue for minutes (wave 2 §3).
 - **Group limit.** Telegram allows a bot 20 messages a minute in a group (wave 0 §5).
   - `/all` tags at most once per 30 s, and 🔔 at most once per 30 s per pool. Every `/all` is still counted, and a repeat is answered with 👌 or a toast.
   - The window's last time is kept in memory. An evicted object has been idle for over a minute, so a lost value can only mean the window has passed.
+  - The window is `TAG_WINDOW_MS` in `src/telegram.ts`. Its keys are `all`, and `ping:{poolId}` for each pool.
+  - Only the tag messages chunk their mentions by `MENTION_CHUNK`: `/all`, a pool's opening, 🔔. The squad, draw and close announcements are one message each (ledger: `decision-announcements-in-one-message.md`).
 
 ## Configuration
 
@@ -368,9 +392,9 @@ The side effects shared by callbacks, `/join` and timers. They are written again
   "observability": { "enabled": true }
 }
 ```
-- Secrets are set with `wrangler secret put` and never committed:
+- Secrets are never committed. Production's go to the Worker from `.prod.vars` with `wrangler secret bulk .prod.vars`:
   - `BOT_TOKEN`.
-  - `WEBHOOK_SECRET`: 32+ characters of `A-Za-z0-9_-`, generated once and kept in the password manager. The same value goes to `wrangler secret put` and to the setup script.
+  - `WEBHOOK_SECRET`: 32+ characters of `A-Za-z0-9_-`, generated once and kept in the password manager. It is written once, in `.prod.vars`, which feeds both `wrangler secret bulk` and the setup script, so the two can't differ.
   - `ALLOWED_CHAT_ID`, kept out of the repo so the repo never names the group.
   - `BOT_INFO`: the JSON of `getMe`.
 - `secrets.required` makes `wrangler deploy` fail while any of the four is missing on the Worker (wrangler ≥ 4.77). Production secrets are therefore set before the first deploy (phase 5).
@@ -378,24 +402,29 @@ The side effects shared by callbacks, `/join` and timers. They are written again
   - It is regenerated whenever `wrangler.jsonc` changes.
   - `wrangler types --check` runs in CI.
   - Biome ignores it.
-- Local development: `.dev.vars` holds the dev bot's values, and `.dev.vars.example` is committed. The setup script reads production values from `.prod.vars`, which is gitignored and has the same keys.
+- Local development: `.dev.vars` holds the same bot's token with the test group's `ALLOWED_CHAT_ID`, and `.dev.vars.example` is committed. The setup script reads production values from `.prod.vars`, which is gitignored and has the same keys.
 
 ## Setup script (phase 4)
 
 - `scripts/configure-telegram.ts` is the Node 26 shell: `node scripts/configure-telegram.ts --env .prod.vars <subcommand>`, with `--env` defaulting to `.dev.vars`.
   - It parses arguments, calls Telegram through grammY's `Api`, and prints.
   - Tests never import it.
-  - Every subcommand first prints the target bot's `@username` (from `getMe`), so the dev and production bots can't be confused.
-- Its pure parts live in `scripts/telegram-setup.ts`: finding groups in `getUpdates` results, and building the `setWebhook` and `setMyCommands` payloads.
-  - It imports only `src/telegram.ts`, `src/texts.ts` and `src/welcome.ts`, with explicit `.ts` extensions, which Node's type stripping needs.
-  - It is tested in workerd.
-- `scripts/tsconfig.json` types `scripts/` with Node's types.
+  - Every subcommand first prints the target bot's `@username` (from `getMe`), so it's clear which bot and env file a run targets.
+- Its pure parts live in `scripts/telegram-setup.ts`:
+  - finding groups in `getUpdates` results;
+  - building the `setWebhook` and `setMyCommands` payloads. The command menu's descriptions are copy, in `texts.commandMenu`;
+  - the probe's request, and what the Worker's answer to it means.
+
+  It imports only the leaves, with explicit `.ts` extensions, which Node's type stripping needs: `src/telegram.ts`, `src/texts.ts` and `src/welcome.ts`. It is tested in workerd.
+- `scripts/tsconfig.json` types `scripts/` with Node's types, with `module: nodenext` and `erasableSyntaxOnly`, so tsc rejects what Node's type stripping rejects. Only a real run shows that Node loads the imports, so `check` also runs `--help`, which calls nothing.
+- Settings come from the `--env` file, and each subcommand reads only what it needs: `BOT_TOKEN` always, `WEBHOOK_SECRET` for `webhook`, `ALLOWED_CHAT_ID` for `welcome`.
+- Output is English: the script is the operator's tool.
 
 | Subcommand | Does |
 |---|---|
-| `discover` | Prints `BOT_INFO`, then reads pending updates with `getUpdates` (no offset, so nothing is consumed). Lists every group seen in them, of any update type, with id, title and type. Follows `migrate_to_chat_id` to the supergroup and marks groups that aren't supergroups. Works only while no webhook is set. If a group is missing, post a message in it and run it again |
-| `webhook <worker-url>` | `setWebhook(<url>/webhook, secret_token, allowed_updates, drop_pending_updates: true)`, then `setMyCommands` for group chats, then `getWebhookInfo`. Fails when that reports `last_error_message` |
-| `welcome` | Posts `welcomeMessage({ isAdmin })` to `ALLOWED_CHAT_ID`, with `isAdmin` from `getChatMember` for the bot |
+| `discover` | Prints `BOT_INFO`. Refuses while a webhook is set, since `getUpdates` can't run then. Reads pending updates with `getUpdates`, with no offset, so nothing is consumed: one page, the oldest 100. Lists every group seen in them, of any update type, with id, title and type. Follows `migrate_to_chat_id` to the supergroup and marks groups that aren't supergroups. If a group is missing, post a message in it and run it again |
+| `webhook <worker-url>` | Builds `<origin>/webhook` with `new URL`, https only, and checks `WEBHOOK_SECRET`: 32–256 characters of `A-Za-z0-9_-`. Probes first: a POST of `{"update_id":0}` with the secret header must get 200, since the Worker ignores an update with no chat. Otherwise it stops: 401 means the Worker's secret differs, 404 means nothing is deployed there. `getWebhookInfo` shows errors only after a delivery, and none happens before someone writes. Then `setWebhook(url, secret_token, allowed_updates, drop_pending_updates: true)`, then `setMyCommands` for group chats, then `getWebhookInfo`. Fails when that reports `last_error_message` |
+| `welcome` | Refuses until a webhook is set, and while `getWebhookInfo` reports an error: otherwise nobody hears 👋. Posts `welcomeMessage({ isAdmin })` to `ALLOWED_CHAT_ID`, with `isAdmin` from `getChatMember` for the bot |
 
 Go-live order (phase 5):
 1. Add the bot to the chat as an admin with only the pin right.
@@ -405,14 +434,17 @@ Go-live order (phase 5):
 5. `webhook`.
 6. `welcome`.
 
-Local development: a dev bot in a test group, `wrangler dev --tunnel`, then `webhook <tunnel-url>` with `.dev.vars`. A Quick Tunnel's host changes every session, so `webhook` runs again each time.
+Local development: the one bot (no dev bot, Taras's call on 2026-11-16) in a test group, `wrangler dev --tunnel`, then `webhook <tunnel-url>` with `.dev.vars`. A Quick Tunnel's host changes every session, so `webhook` runs again each time. A bot has one webhook: after go-live, a local session takes the bot away from the friends' chat until `webhook <worker-url> --env .prod.vars` points it back; commands the chat sends meanwhile reach the local Worker, whose `ALLOWED_CHAT_ID` is the test group, and are lost.
 
 ## CI/CD
 
-- `.github/workflows/check.yml` runs on every push and pull request: `setup-node` from `.nvmrc`, `npm ci`, `npm run check`, `npm test`.
-- `.github/workflows/deploy.yml` runs on push to `main` and on manual dispatch: the same checks, then `cloudflare/wrangler-action@v4` running `deploy` with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from GitHub secrets.
+- `.github/workflows/check.yml` runs on every push except to `main`, on every pull request, and as a reusable workflow (`workflow_call`): `setup-node` from `.nvmrc`, `npm ci`, `npm run check`, `npm test`.
+- `.github/workflows/deploy.yml` runs on push to `main` and on manual dispatch.
+  - Its first job is `check.yml` itself, so a merge runs the checks once.
+  - Then it runs `npm ci` and `cloudflare/wrangler-action@v4` with `command: deploy`, `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. With no `wranglerVersion`, the action uses the installed, locked wrangler.
+  - `concurrency: deploy` without cancelling, so merges deploy in order.
 - npm scripts:
-  - `check` = `biome check . && tsc --noEmit && tsc --noEmit -p test && tsc --noEmit -p scripts && wrangler types --check`;
+  - `check` = `biome check . && tsc --noEmit && tsc --noEmit -p test && tsc --noEmit -p scripts && node scripts/configure-telegram.ts --help && wrangler types --check`. The `--help` run is the one check that Node loads the script's imports;
   - `test` = `vitest run`;
   - `dev` = `wrangler dev`;
   - `deploy` = `wrangler deploy`;
@@ -458,7 +490,7 @@ Local development: a dev bot in a test group, `wrangler dev --tunnel`, then `web
   - A failure before anything was committed or sent returns 500 until the cap, then 200, and the next message goes through.
   - The card's send fails at `/pool`, and the alarm posts it later.
   - An alarm firing twice pings once.
-  - A timer action that always throws stops after 3 attempts.
+  - A timer action that always fails stops after its fourth try.
   - A member's "left" message and their `chat_member` update, in both orders.
 
 ## File tree
@@ -471,25 +503,33 @@ scripts/
   tsconfig.json          Node types for scripts/                           phase 4
 src/
   index.ts          Worker: webhook, routing, foreign chats                  phase 2
-  telegram.ts       WEBHOOK_PATH, ALLOWED_UPDATES, chatIdOf, isInChat,
-                    HI_CALLBACK, COMMANDS (import-free)                      phases 2, 3, 4
+  telegram.ts       WEBHOOK_PATH, ALLOWED_UPDATES, chatOf, isGroup, isInChat,
+                    isAdmin, personSending, HI_CALLBACK (import-free)        phases 2, 3, 4
   texts.ts          every Ukrainian string, plural helper (import-free)      phase 3+
   welcome.ts        welcomeMessage({ isAdmin }); imports only the leaves     phase 3
-  kyiv-time.ts      zone, wall time → instant, labels, month window          phases 6, 9
+  kyiv-time.ts      zone, wall time → instant, labels                        phase 6
   bot.ts            createBot(features), the feature list, timer wiring      phase 2+
   context.ts        BotContext with ctx.room                                 phase 2
   chat/
     chat-room.ts    ChatRoom: migrations, settings, queue, dedupe, failure
                     policy, alarm, arming                                    phases 2, 8
     room.ts         Room: tx, write, clock, random, chatId, api              phase 2
+                    mentionChunk, throttle                                   phase 3
+                    RoomAccess, read                                         phase 6
+    attempt.ts      a Telegram call after a commit, logged on failure       phase 6
+    throttle.ts     when each keyed action last ran, in memory              phase 3
     schema.ts       ordered migrations                                       phases 2, 3, 6, 8
   members/
     roster.ts, member-store.ts, member-handlers.ts                           phase 3
     mentions.ts, all-handlers.ts                                             phase 3
   pools/
     pool-args.ts, pool-rules.ts, pool-format.ts, pool-keyboards.ts           phases 6, 7
-    pool-store.ts, pool-actions.ts, pool-handlers.ts, pool-callbacks.ts      phases 6, 7, 8
-    pool-timers.ts  timer planner and actions                                phase 8
+    pool-messages.ts  replies, the messages under a card, toasts            phases 6, 7
+    pool-store.ts, pool-actions.ts, pool-card.ts                             phases 6, 7, 8
+    pool-handlers.ts, pool-callbacks.ts                                      phases 6, 7
+    pool-timers.ts  timer planner: nextDue, dueActions (pure)               phase 8
+    pool-alarm.ts   the alarm's runner: each due action, retries, give-ups  phase 8
+    answer-store.ts, timer-store.ts  answers' SQL; the timers' bookkeeping   phases 6, 8
   stats/
     event-store.ts, domikpisik-handlers.ts                                   phase 3
     stats-queries.ts, stats-format.ts, stats-handlers.ts                     phase 9

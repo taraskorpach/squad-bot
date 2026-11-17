@@ -14,9 +14,10 @@ shape: harness-first
 - `package.json`, `package-lock.json`, `.nvmrc`, `tsconfig.json`, `biome.json`, `.gitignore`, `.dev.vars.example`
 - `wrangler.jsonc`, `worker-configuration.d.ts`
 - `vitest.config.mts`, `test/tsconfig.json`, `test/setup.ts`, `test/helpers/telegram.ts`, `test/helpers/updates.ts`
-- `src/index.ts`, `src/telegram.ts` (`WEBHOOK_PATH`, `ALLOWED_UPDATES`, `chatIdOf`, `isInChat`), `src/bot.ts`, `src/context.ts`
-- `src/chat/chat-room.ts`, `src/chat/room.ts`, `src/chat/schema.ts`
-- `test/index.test.ts`, `test/telegram.test.ts`, `test/chat/chat-room.test.ts`, `test/helpers/helpers.test.ts`
+- `src/index.ts`, `src/telegram.ts` (`WEBHOOK_PATH`, `ALLOWED_UPDATES`, `chatIdOf`, `isInChat`), `src/bot.ts`, `src/context.ts`, `src/settings.ts`
+- `src/chat/chat-room.ts`, `src/chat/room.ts`, `src/chat/schema.ts`, `src/chat/serial-queue.ts`, `src/chat/update-log.ts`, `src/chat/failure-policy.ts`
+- `test/index.test.ts`, `test/telegram.test.ts`, `test/settings.test.ts`, `test/bot.test.ts`, `test/helpers/helpers.test.ts`
+- `test/chat/chat-room.test.ts`, `test/chat/schema.test.ts`, `test/chat/serial-queue.test.ts`, `test/chat/failure-policy.test.ts`
 - `.github/workflows/check.yml`
 
 ## Implementation guidance
@@ -53,14 +54,14 @@ them is `research/2026-11-16-wave-2-cloudflare-fit.md` and the craft snapshot.
 
 ## Deliverables
 
-- [ ] Scaffold: npm project with TypeScript 6, Biome, `.nvmrc` 26 and `wrangler.jsonc` (`ChatRoom` through `exports`, compatibility date 2026-11-16 with the `temporal` flag, observability on); `npm run check` passes on an empty Worker
-- [ ] Test harness: `@cloudflare/vitest-plugin` config with fake secrets, an MSW network that records and answers Telegram API calls, and update builders, with a self-test
-- [ ] Worker: `POST /webhook` answers 401 for a missing or wrong secret and 404 for other paths, finds the chat with `chatIdOf` (a test per `ALLOWED_UPDATES` type), ignores other chats, leaves groups that add it (`isInChat` false → true), logs a migration of the allowed chat, and routes the allowed chat to the one `ChatRoom`
-- [ ] Migrations: an ordered list applied once in the object's constructor, each migration with its `_sql_schema_migrations` row in one `transactionSync`; migration 1 creates `processed_updates` and `failed_updates`; settings checked at construction
-- [ ] Once and in order: the serial queue runs each update to the end before the next, a redelivered update changes nothing, and `ctx.room.commit` records the update id with the first change and returns its result
-- [ ] Failure policy: a 500 only when nothing was committed or sent and the error isn't a permanent Telegram error, until the update has failed 3 times over 5 minutes (`failed_updates`); every other failure is logged and answered 200
-- [ ] grammY inside the object: built lazily from the `features` seam with `botInfo`, auto-retry capped at 2 retries and 5 s with server errors rethrown, the 10 s timeout and the delivered marker; bots and channel identities ignored, messages over 10 minutes old flagged stale, `/cmd@otherbot` ignored
-- [ ] CI: `.github/workflows/check.yml` runs `npm run check` and `npm test` on pushes and pull requests
+- [x] Scaffold: npm project with TypeScript 6, Biome, `.nvmrc` 26 and `wrangler.jsonc` (`ChatRoom` through `exports`, compatibility date 2026-11-16 with the `temporal` flag, observability on); `npm run check` passes on an empty Worker
+- [x] Test harness: `@cloudflare/vitest-plugin` config with fake secrets, an MSW network that records and answers Telegram API calls, and update builders, with a self-test
+- [x] Worker: `POST /webhook` answers 401 for a missing or wrong secret and 404 for other paths, finds the chat with `chatIdOf` (a test per `ALLOWED_UPDATES` type), ignores other chats, leaves groups that add it (`isInChat` false → true), logs a migration of the allowed chat, and routes the allowed chat to the one `ChatRoom`
+- [x] Migrations: an ordered list applied once in the object's constructor, each migration with its `_sql_schema_migrations` row in one `transactionSync`; migration 1 creates `processed_updates` and `failed_updates`; settings checked at construction
+- [x] Once and in order: the serial queue runs each update to the end before the next, a redelivered update changes nothing, and `ctx.room.commit` records the update id with the first change and returns its result
+- [x] Failure policy: a 500 only when nothing was committed or sent and the error isn't a permanent Telegram error, until the update has failed 3 times over 5 minutes (`failed_updates`); every other failure is logged and answered 200
+- [x] grammY inside the object: built lazily from the `features` seam with `botInfo`, auto-retry capped at 2 retries and 5 s with server errors rethrown, the 10 s timeout and the delivered marker; bots and channel identities ignored, messages over 10 minutes old flagged stale, `/cmd@otherbot` ignored
+- [x] CI: `.github/workflows/check.yml` runs `npm run check` and `npm test` on pushes and pull requests
 
 ## Phase-local notes
 

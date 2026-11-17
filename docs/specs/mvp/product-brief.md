@@ -16,7 +16,7 @@ To find out whether anyone will play, they tag everyone through another bot, and
 - If more say Граю than the pool has seats, the latest to join wait on a bench in order. When a player drops out, the first on the bench moves up and is pinged. A one-time 🎲 button draws who sits out instead.
 - If a pool has a start time, the bot tags its players (not the bench) once at that time. A pool closes by itself three hours after its start time, or three hours after it opened if it was for now.
 - Several pools can be open at once, each with its own message. /pools lists the open ones and how full each is; /join without replying to a pool goes to the newest.
-- /stats shows five leaderboards, all-time and this month: who calls /all, sends /domikpisik, says Граю, opens pools and says Пас most, plus how many joins there have been overall.
+- /stats shows five all-time leaderboards: who calls /all, sends /domikpisik, says Граю, opens pools and says Пас most, plus how many joins there have been overall.
 
 ## The real change
 "Who's playing?" stops being a pile of replies and becomes one list per game that everyone fills in with a tap and the bot keeps current.
