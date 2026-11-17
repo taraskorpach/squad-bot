@@ -45,7 +45,8 @@ export type DrawRefusal = 'used' | 'not-playing' | 'bench-empty';
 export type JoinTarget = { kind: 'pool'; poolId: number } | { kind: 'closed' } | { kind: 'none' };
 
 export interface Seats {
-	size: number;
+	/** None for a pool without a seat limit: everyone who says Граю plays. */
+	size?: number;
 	squadAnnounced: boolean;
 }
 
@@ -57,11 +58,12 @@ export function closingTime(openedAt: number, startsAt: number | undefined): num
 }
 
 /**
- * Plays in rank order: the first `size` are the squad, the rest wait on the bench. Passes in the
- * order they came. The unanswered are the members in the chat who haven't answered.
+ * Plays in rank order: the first `size` are the squad, the rest wait on the bench; with no size,
+ * every play is in the squad. Passes in the order they came. The unanswered are the members in
+ * the chat who haven't answered.
  */
 export function lineupOf(
-	size: number,
+	size: number | undefined,
 	answers: readonly Answer[],
 	inChat: readonly number[],
 ): Lineup {
@@ -74,9 +76,10 @@ export function lineupOf(
 		.sort((a, b) => a.answeredAt - b.answeredAt)
 		.map((given) => given.userId);
 	const answered = new Set(answers.map((given) => given.userId));
+	const seats = size ?? plays.length;
 	return {
-		players: plays.slice(0, size),
-		bench: plays.slice(size),
+		players: plays.slice(0, seats),
+		bench: plays.slice(seats),
 		passed,
 		unanswered: inChat.filter((id) => !answered.has(id)),
 	};
@@ -103,7 +106,9 @@ export function answer(
 	const before = lineupOf(seats.size, answers, []);
 	const others = answers.filter((given) => given.userId !== userId);
 	const after = lineupOf(seats.size, [...others, write], []);
-	const reachedSize = before.players.length < seats.size && after.players.length === seats.size;
+	const { size } = seats;
+	const reachedSize =
+		size !== undefined && before.players.length < size && after.players.length === size;
 	return {
 		write,
 		...placeOf(choice, userId, after),
@@ -127,13 +132,18 @@ export function joinTarget(
 
 /**
  * The one-time draw: `size` players picked uniformly at random from everyone playing, with
- * `random` in [0, 1). A draw of 6 for 5 keeps the same squad 1 time in 6.
+ * `random` in [0, 1); with no size, everyone. A draw of 6 for 5 keeps the same squad 1 time in 6.
  */
-export function draw(size: number, answers: readonly Answer[], random: () => number): DrawResult {
+export function draw(
+	size: number | undefined,
+	answers: readonly Answer[],
+	random: () => number,
+): DrawResult {
 	const plays = answers.filter((given) => given.choice === 'play').sort((a, b) => a.rank - b.rank);
 	const remaining = plays.map((given) => given.userId);
+	const seats = size ?? plays.length;
 	const picked = new Set<number>();
-	while (picked.size < size && remaining.length > 0) {
+	while (picked.size < seats && remaining.length > 0) {
 		const [chosen] = remaining.splice(Math.floor(random() * remaining.length), 1);
 		if (chosen !== undefined) picked.add(chosen);
 	}
