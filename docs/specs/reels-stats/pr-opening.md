@@ -5,6 +5,7 @@
 2 code phases planned, one PR from `feat/reels-stats`: phase 1 counts posts and adds the board,
 and phase 2 makes the bot answer them. Merging deploys the bot (main's `deploy` workflow), and the
 first update after the deploy runs migration 6 on the live object.
+PR #9 merged 2026-11-17 as d1926b1 (merge).
 
 ## Pre-PR checks
 
