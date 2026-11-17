@@ -33,6 +33,7 @@ Warm cache for forward-propagating learnings. One row per ledger entry with its
 - `decision-tag-window.md` — [phase 3, 7] — /all and 🔔 tag at most once per 30 s; every /all counts (Taras)
 - `decision-event-time-is-when-the-person-acted.md` — [phase 6, 9] — an event's at is its message's date for a command, the clock for a tap
 - `decision-announcements-in-one-message.md` — [phase 5, 7, 8] — squad, draw and close messages aren't chunked; only tag messages are
+- `decision-stats-all-time-only.md` — [phase 9] — /stats counts all time, one number per row; no month (Taras)
 
 ## Workarounds
 - `workaround-phase-5-runs-on-feat-mvp.md` — [phase 5] — no branch held phases 1 and 4; feat/mvp takes in PR A

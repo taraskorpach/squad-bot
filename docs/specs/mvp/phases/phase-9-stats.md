@@ -5,7 +5,7 @@ pr: C
 
 # Phase 9 — Stats
 
-**Goal:** `/stats` shows five leaderboards for this month and all time, read from the event record, with months cut at Kyiv midnight.
+**Goal:** `/stats` shows five all-time leaderboards, read from the event record. The phase first built them for this month and all time; on 2026-11-17 Taras chose all time only (`ledger/decision-stats-all-time-only.md`), so the month window below is history.
 
 **Outcome:** The group's running jokes get a scoreboard. Free. Low risk.
 
@@ -36,6 +36,7 @@ pr: C
 - [x] Leaderboard queries: per-person counts for the five kinds, this month and all time, with `join`, `pass` and `pool_open` counted once per pool and person by their first event; total joins as distinct pool-and-person pairs
 - [x] Leaderboard format (pure): the header with the month's Ukrainian name, five boards, sorting, empty boards
 - [x] `/stats`: replies with the boards
+- [x] `/stats` counts all time only: no Kyiv month, one count per row (Taras, 2026-11-17, while trying it in the test group)
 
 ## Phase-local notes
 
