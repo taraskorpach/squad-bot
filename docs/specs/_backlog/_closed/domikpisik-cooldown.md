@@ -2,6 +2,7 @@
 title: A cooldown for /domikpisik
 tags: [stats]
 created: 2026-11-17T15:03:57+02:00
+resolution: done without a spec on feat/domikpisik-cooldown — once a minute per person, judged by when it was sent; a repeat gets no 👌
 ---
 Taras, 2026-11-17: "Додати таймаут для команди /domikpisik".
 

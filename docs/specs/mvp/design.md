@@ -85,7 +85,8 @@ every known member except the caller, at most `MENTION_CHUNK` (5) per message. W
 the last tagging, a repeat is only counted and gets a 👌 reaction.
 
 ### `/domikpisik`
-No reply, ever. The call is counted for `/stats`.
+No reply, ever. The call is counted for `/stats`. A repeat from the same person within a minute of a counted one
+isn't counted, judged by when each was sent (Taras, 2026-11-17).
 
 ### A pool's life
 ```
