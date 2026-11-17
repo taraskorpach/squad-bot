@@ -1,7 +1,7 @@
 ---
 created: 2026-11-17T15:03:57+02:00
 updated: 2026-11-17T15:03:57+02:00
-status: draft
+status: done
 area: [bot]
 domain: [pools]
 scope: [feature]
