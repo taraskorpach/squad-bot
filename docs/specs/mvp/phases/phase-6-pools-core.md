@@ -50,15 +50,15 @@ pr: B
 
 ## Deliverables
 
-- [ ] Migration 3: `pools`, `answers` and `pool_messages` tables
-- [ ] `/pool` arguments (pure) with `src/kyiv-time.ts`: game word first, size 2–10 and time in any order; the nearest occurrence among yesterday, today and tomorrow in Kyiv time, against the message's date, with the under-an-hour-means-now rule and both DST nights; each error from `design.md`
-- [ ] Pool rules (pure): lineup by rank, switching answers, move-ups as the squad after minus the squad before (the actor left out), the squad completing for the first time
-- [ ] Card and keyboard (pure): open and closed renders with the ✅ and ❌ buttons and the `p:<id>:<action>` codec, every user-provided string escaped, identical output for identical input
-- [ ] `/pool`: one commit for the pool, the author's answer and the `pool_open` and `join` events; then the card and the tag message, recorded in `pool_messages`; a card that fails to send leaves the pool open with no card; a stale `/pool` does nothing
-- [ ] ✅ and ❌ taps through `pool-actions.ts`: the answer and its `join` or `pass` event committed, the toast, the card edited only when its render changed (`card_render` written after Telegram accepts); a tap on an unrecorded card adopts it
-- [ ] `/join`: a reply resolves its pool through `pool_messages` (open → join, closed → the closed reply), anything else joins the newest open pool, with a 👌 reaction; the no-open-pool reply; a stale `/join` does nothing
-- [ ] Squad complete: `squad_announced` set in the commit that fills the squad, then the message posted once
-- [ ] Move-up: a player who passes is replaced by the bench head, who is pinged; a bench member passing moves nobody
+- [x] Migration 3: `pools`, `answers` and `pool_messages` tables
+- [x] `/pool` arguments (pure) with `src/kyiv-time.ts`: game word first, size 2–10 and time in any order; the nearest occurrence among yesterday, today and tomorrow in Kyiv time, against the message's date, with the under-an-hour-means-now rule and both DST nights; each error from `design.md`
+- [x] Pool rules (pure): lineup by rank, switching answers, move-ups as the squad after minus the squad before (the actor left out), the squad completing for the first time
+- [x] Card and keyboard (pure): open and closed renders with the ✅ and ❌ buttons and the `p:<id>:<action>` codec, every user-provided string escaped, identical output for identical input
+- [x] `/pool`: one commit for the pool, the author's answer and the `pool_open` and `join` events; then the card and the tag message, recorded in `pool_messages`; a card that fails to send leaves the pool open with no card; a stale `/pool` does nothing
+- [x] ✅ and ❌ taps through `pool-actions.ts`: the answer and its `join` or `pass` event committed, the toast, the card edited only when its render changed (`card_render` written after Telegram accepts); a tap on an unrecorded card adopts it
+- [x] `/join`: a reply resolves its pool through `pool_messages` (open → join, closed → the closed reply), anything else joins the newest open pool, with a 👌 reaction; the no-open-pool reply; a stale `/join` does nothing
+- [x] Squad complete: `squad_announced` set in the commit that fills the squad, then the message posted once
+- [x] Move-up: a player who passes is replaced by the bench head, who is pinged; a bench member passing moves nobody
 
 ## Phase-local notes
 

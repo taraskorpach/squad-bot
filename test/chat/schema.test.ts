@@ -26,9 +26,12 @@ describe('migrations', () => {
 			expect(appliedIds(state.storage)).toEqual(MIGRATIONS.map((migration) => migration.id));
 			expect(tableNames(state.storage)).toEqual([
 				'_sql_schema_migrations',
+				'answers',
 				'events',
 				'failed_updates',
 				'members',
+				'pool_messages',
+				'pools',
 				'processed_updates',
 				'sqlite_sequence',
 			]);
@@ -94,6 +97,25 @@ describe('the event record', () => {
 				{ kind: 'all', pool_id: null },
 				{ kind: 'a kind no phase has planned', pool_id: null },
 			]);
+		});
+	});
+});
+
+describe('the pools', () => {
+	it('start with no timer pending: not pinged, no failed attempt, no retry', async () => {
+		await runInDurableObject(freshRoom(), (_room, state) => {
+			state.storage.sql.exec(
+				'INSERT INTO pools (game, size, author_id, opened_at, closes_at) VALUES (?, 5, 1001, ?, ?)',
+				'CS2',
+				NOW,
+				NOW,
+			);
+
+			expect(
+				state.storage.sql
+					.exec('SELECT start_pinged, timer_attempts, timer_retry_at FROM pools')
+					.toArray(),
+			).toEqual([{ start_pinged: 0, timer_attempts: 0, timer_retry_at: null }]);
 		});
 	});
 });

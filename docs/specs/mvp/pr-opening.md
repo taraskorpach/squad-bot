@@ -12,6 +12,17 @@
 
 Every merge to `main` deploys through GitHub Actions. PRs need the GitHub repo from phase 1.
 
+The PRs are stacked, because each needs the one before it: B branches from A, and C from B.
+Once a PR merges, the next is retargeted to `main`.
+
+PR #1 · feat/mvp-pr-a
+PR #2 · feat/mvp-pr-b (base feat/mvp-pr-a)
+PR #3 · feat/mvp-pr-c (base feat/mvp-pr-b)
+
+`spec.ts pr open` always targets `main`, so a stacked PR is opened by hand with
+`gh pr create --base <the branch below>`; babysit's `pr open` then finds it. Taras chose to
+babysit #3: merged on green, it adds the stats to `feat/mvp-pr-b`, and #2 carries both to `main`.
+
 ## Pre-PR checks
 
 Scoped to the one Worker this spec builds. Tick each before opening the PR, never straight to `main`.

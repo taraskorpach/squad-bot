@@ -89,6 +89,10 @@ The storage and Telegram handle shared by every write path, updates and alarms a
   - `ctx.room.commit(fn)` is `room.tx((sql) => { recordUpdateOnce(sql); return fn(sql); })`.
   - `recordUpdateOnce` is an `INSERT OR IGNORE` into `processed_updates`, so a second commit in the same update is harmless.
   - It carries the update's flags: `committed`, `delivered` and `stale`.
+- `RoomAccess` (phase 6) is what an action needs of a room: `tx`, `write`, `read`, `clock`, `random`, `chatId`, `mentionChunk` and `api`.
+  - `Room` and `ctx.room` both satisfy it. On `ctx.room`, `tx` is `commit`, so an action called from a handler records the update with its change.
+  - The alarm passes the plain `Room`.
+- After a commit, every Telegram call goes through `attempt(label, call)` (`src/chat/attempt.ts`). A failure is logged, the next call still goes, and the call's result comes back, or nothing.
 
 ### Processing one update
 1. If `processed_updates` holds the `update_id`, stop: it is a redelivery.
@@ -119,7 +123,7 @@ Never answer 200 for a failed update the way grammY's Deno Workers guide does (`
 
 Times are epoch milliseconds, UTC. Tables are snake_case plurals (Cloudflare's rules).
 
-An event's `at` is when the person acted: a command's message `date`, or the room's clock for a tap, which carries no date. So a late `/all` counts in the month it was made.
+An event's `at` is when the person acted: a command's message `date`, or the room's clock for a tap, which carries no date. The boards count all time today, but a board cut by time would place a late `/all` when it was made.
 
 The schema holds identity and structure. Tunable domain rules (event kinds, size bounds, counting rules) live in code, for two reasons:
 - SQLite can't change a CHECK without rebuilding the table.
@@ -230,8 +234,6 @@ None of these imports grammY or touches storage; time and randomness come in as 
   - `сьогодні о HH:MM` or `завтра о HH:MM`, relative to the render time;
   - `dd.MM о HH:MM` on closed cards.
 - `nextMidnight(now)`: the next Kyiv midnight, when a label can change.
-- `monthWindow(now)`: from the first day of the current Kyiv month at 00:00 to the first day of the next, as `[startMs, endMs)`. SQLite can't do this itself: its `localtime` is the host's UTC, and it has no IANA zones.
-- The month's name: `Intl.DateTimeFormat('uk', { month: 'long' })` in Kyiv, which gives the standalone nominative ("листопад").
 
 ### `/pool` arguments (`src/pools/pool-args.ts`, phase 6)
 - Tokens split on whitespace:
@@ -281,12 +283,13 @@ None of these imports grammY or touches storage; time and randomness come in as 
   - Anything else gets an empty `answerCallbackQuery` from a catch-all registered last in `src/bot.ts`.
 
 ### Stats (`src/stats/stats-queries.ts`, `src/stats/stats-format.ts`, phase 9)
-- Boards, per kind, within the month window and without it:
+- Boards, per kind, for all time (Taras, 2026-11-17: no month for now):
   - `all` and `domikpisik` count every event.
-  - `join`, `pass` and `pool_open` count once per pool and person, placed by that pair's first event (`MIN(at)`), so toggling can't inflate a board.
+  - `join`, `pass` and `pool_open` count once per pool and person, so toggling can't inflate a board.
   - Total joins: distinct (pool, person) pairs of `join`.
-- Names come from `members`, including people who left.
-- Sort by month count, then all-time count, then name. Leave out rows that are zero in both.
+- Names come from `members`, including people who left. `displayNames` tells them apart among
+  every member the bot knows (`knownMembers`), so a namesake who left still adds the initial.
+- Sort by the count, then name. Equal counts share a place (1, 1, 3).
 
 ### Timer planner (`src/pools/pool-timers.ts`, phase 8)
 - `nextDue(pools, now)` (pure): the earliest of these, over the open pools:
@@ -297,13 +300,21 @@ None of these imports grammY or touches storage; time and randomness come in as 
 
   A pool with `timer_retry_at` set is due no earlier than that time.
 
-## Pool actions (`src/pools/pool-actions.ts`, phases 6–8)
+## Pool actions (`src/pools/pool-actions.ts`, `src/pools/pool-card.ts`, phases 6–8)
 
-The side effects shared by callbacks, `/join` and timers. They are written against `Room`, never against a grammY context, because `alarm()` has none.
+The side effects shared by callbacks, `/join` and timers. They are written against `RoomAccess`, never against a grammY context, because `alarm()` has none.
 
-- `applyAnswer(room, poolId, userId, choice)` commits the answer and its event. It returns what changed: the toast, move-ups, and whether the squad just completed.
-- `refreshCard(room, poolId)` renders the card and edits it when it changed.
-- `postCard(room, poolId)` posts the card and the opening tag message, records both in `pool_messages`, and stores `message_id`.
+- `openPool(room, request)` commits the pool, the author's answer and the `pool_open` and `join` events, then calls `postCard`.
+- `applyAnswer(room, poolId, userId, choice, at)` commits the answer and its event, and the squad's flag the first time it fills. It returns the decision: the outcome for the toast, the move-ups, and whether the squad just completed. For a closed or missing pool it returns that instead.
+- `showAnswer(room, poolId, decision)` refreshes the card, then posts the squad's message and each move-up under it.
+- `commitDraw(room, poolId, userId)` and `showDraw` (phase 7): the draw and the renumbered line in one commit, checked as stored; then the card and the draw's message.
+- `closePool(room, poolId, by)` is `commitClose` (only an open pool, `closed_by` set) then `showClose`. `showClose` turns the card final, and for the author tags the others who said Граю. The ✖️ tap answers its toast between the two halves.
+- The tap handler dispatches through a `Record` of every pool action, so a new button can't go unhandled. 🔔 runs in the handler, since it needs `ctx.room.throttle` and commits nothing.
+- In `pool-card.ts`:
+  - `cardState(sql, poolId)` reads what a card shows: the pool, its lineup, and everyone on it, leavers included.
+  - `refreshCard(room, poolId)` renders the card and edits it when it changed.
+  - `postCard(room, poolId, replyTo?)` posts the card and the opening tag messages, records them all in `pool_messages`, and stores `message_id`.
+  - `postUnderCard(room, poolId, cardId, text)` posts one message under the card and records it.
 - `closePool(room, poolId, reason)` (phase 7) commits the close and renders the final card. When the author closes, it tags everyone else who said Граю.
 - The announcements: squad complete, a move-up, the draw.
 - A tap on a card of a pool whose `message_id` is NULL adopts the tapped message as the card: the card was posted, but its id was never stored.
@@ -319,6 +330,11 @@ The side effects shared by callbacks, `/join` and timers. They are written again
 - **Arming.**
   - After a commit that changes timing (a pool opened or closed, a ping or a retry recorded), compute `nextDue` with synchronous SQL. Call `setAlarm` (or `deleteAlarm`) without awaiting, in the same synchronous block, so the alarm commits with the change (alarm operations follow the storage rules, wave 2 §4).
   - At the end of every queued task, compare `getAlarm()` with `nextDue` and set it when they differ. An alarm lost for any reason comes back with the next update.
+  - In code (phase 8):
+    - `RoomAccess.arm()` does the first, and `openPool` and `commitClose` call it.
+    - `Room.armIfChanged()` does the second, from `ChatRoom` after every update and alarm.
+    - The planner and the runner reach `chat/` as `TIMERS` (`{ nextDue, run }`) from `src/bot.ts`. `ChatRoom.timers` is a test seam.
+  - A missing card is due at once, so `openPool`'s arming wakes the object right after the card's send. If the card did go out, the alarm finds nothing due and re-arms.
 - **`alarm()`** runs in the queue, each due action in its own `try`:
   - A missing card: `postCard`.
   - A start ping: commit `start_pinged = 1`, then tag the players (not the bench), with the fill when the squad isn't complete. No ping when nobody plays. A ping more than 15 minutes late is skipped and marked done.
@@ -327,7 +343,7 @@ The side effects shared by callbacks, `/join` and timers. They are written again
 - **Retries.**
   - A failing action sets `timer_attempts + 1` and `timer_retry_at = now + 1, 2 or 4 min` in its own write. Failing means its commit failed, or, for the card and the start ping, the Telegram call after the commit failed. For the start ping, the flag goes back to 0.
   - A success clears both columns.
-  - After 3 attempts the action is given up and logged: the card stays missing, the ping is skipped, or the pool is closed by a minimal update.
+  - After the fourth try (once, then after 1, 2 and 4 minutes) the action is given up and logged. The card stays missing: its used-up tries keep it from coming due. The ping is marked done. The pool is closed by a minimal update. A retry holds back all of the pool's actions (phase 8).
   - Other messages that are sent once aren't retried (`design.md` → *Edge cases*).
 - **Unexpected errors.** On any unexpected error in `alarm()`, call `setAlarm(clock() + 60_000)` and skip the end-of-task re-arm to a past time. After 6 failed retries, alarms stop until the next `setAlarm` (wave 2 §4). Without the retry columns, a failing action would point the alarm at the past and fire in a loop, burning the free plan's daily requests and rows within minutes.
 - Alarms fire at least once and can be up to a minute late. The flags and `status` commit before the Telegram calls, so a second firing does nothing.
@@ -356,6 +372,8 @@ The side effects shared by callbacks, `/join` and timers. They are written again
 - **Group limit.** Telegram allows a bot 20 messages a minute in a group (wave 0 §5).
   - `/all` tags at most once per 30 s, and 🔔 at most once per 30 s per pool. Every `/all` is still counted, and a repeat is answered with 👌 or a toast.
   - The window's last time is kept in memory. An evicted object has been idle for over a minute, so a lost value can only mean the window has passed.
+  - The window is `TAG_WINDOW_MS` in `src/telegram.ts`. Its keys are `all`, and `ping:{poolId}` for each pool.
+  - Only the tag messages chunk their mentions by `MENTION_CHUNK`: `/all`, a pool's opening, 🔔. The squad, draw and close announcements are one message each (ledger: `decision-announcements-in-one-message.md`).
 
 ## Configuration
 
@@ -472,7 +490,7 @@ Local development: the one bot (no dev bot, Taras's call on 2026-11-16) in a tes
   - A failure before anything was committed or sent returns 500 until the cap, then 200, and the next message goes through.
   - The card's send fails at `/pool`, and the alarm posts it later.
   - An alarm firing twice pings once.
-  - A timer action that always throws stops after 3 attempts.
+  - A timer action that always fails stops after its fourth try.
   - A member's "left" message and their `chat_member` update, in both orders.
 
 ## File tree
@@ -489,7 +507,7 @@ src/
                     isAdmin, personSending, HI_CALLBACK (import-free)        phases 2, 3, 4
   texts.ts          every Ukrainian string, plural helper (import-free)      phase 3+
   welcome.ts        welcomeMessage({ isAdmin }); imports only the leaves     phase 3
-  kyiv-time.ts      zone, wall time → instant, labels, month window          phases 6, 9
+  kyiv-time.ts      zone, wall time → instant, labels                        phase 6
   bot.ts            createBot(features), the feature list, timer wiring      phase 2+
   context.ts        BotContext with ctx.room                                 phase 2
   chat/
@@ -497,6 +515,8 @@ src/
                     policy, alarm, arming                                    phases 2, 8
     room.ts         Room: tx, write, clock, random, chatId, api              phase 2
                     mentionChunk, throttle                                   phase 3
+                    RoomAccess, read                                         phase 6
+    attempt.ts      a Telegram call after a commit, logged on failure       phase 6
     throttle.ts     when each keyed action last ran, in memory              phase 3
     schema.ts       ordered migrations                                       phases 2, 3, 6, 8
   members/
@@ -504,8 +524,12 @@ src/
     mentions.ts, all-handlers.ts                                             phase 3
   pools/
     pool-args.ts, pool-rules.ts, pool-format.ts, pool-keyboards.ts           phases 6, 7
-    pool-store.ts, pool-actions.ts, pool-handlers.ts, pool-callbacks.ts      phases 6, 7, 8
-    pool-timers.ts  timer planner and actions                                phase 8
+    pool-messages.ts  replies, the messages under a card, toasts            phases 6, 7
+    pool-store.ts, pool-actions.ts, pool-card.ts                             phases 6, 7, 8
+    pool-handlers.ts, pool-callbacks.ts                                      phases 6, 7
+    pool-timers.ts  timer planner: nextDue, dueActions (pure)               phase 8
+    pool-alarm.ts   the alarm's runner: each due action, retries, give-ups  phase 8
+    answer-store.ts, timer-store.ts  answers' SQL; the timers' bookkeeping   phases 6, 8
   stats/
     event-store.ts, domikpisik-handlers.ts                                   phase 3
     stats-queries.ts, stats-format.ts, stats-handlers.ts                     phase 9

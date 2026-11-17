@@ -54,6 +54,52 @@ export const MIGRATIONS: readonly Migration[] = [
 			CREATE INDEX idx_events_kind_at ON events (kind, at);
 		`,
 	},
+	{
+		id: 3,
+		description: 'pools, their answers, and every message the bot posts for one',
+		// The size bound (2–10) is a rule the parser applies, not a CHECK: rules change, and SQLite
+		// can't change a CHECK in place. A NULL message_id means the card hasn't been posted yet.
+		sql: `
+			CREATE TABLE pools (
+				id              INTEGER PRIMARY KEY AUTOINCREMENT,
+				game            TEXT NOT NULL,
+				size            INTEGER NOT NULL,
+				author_id       INTEGER NOT NULL,
+				opened_at       INTEGER NOT NULL,
+				starts_at       INTEGER,
+				closes_at       INTEGER NOT NULL,
+				message_id      INTEGER,
+				status          TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
+				closed_by       TEXT CHECK (closed_by IN ('auto', 'author')),
+				squad_announced INTEGER NOT NULL DEFAULT 0,
+				drawn           INTEGER NOT NULL DEFAULT 0,
+				card_render     TEXT
+			);
+			CREATE INDEX idx_pools_status_opened ON pools (status, opened_at);
+			CREATE TABLE answers (
+				pool_id     INTEGER NOT NULL REFERENCES pools (id),
+				user_id     INTEGER NOT NULL,
+				choice      TEXT NOT NULL CHECK (choice IN ('play', 'pass')),
+				rank        INTEGER NOT NULL,
+				answered_at INTEGER NOT NULL,
+				PRIMARY KEY (pool_id, user_id)
+			);
+			CREATE TABLE pool_messages (
+				message_id INTEGER PRIMARY KEY,
+				pool_id    INTEGER NOT NULL REFERENCES pools (id)
+			);
+		`,
+	},
+	{
+		id: 4,
+		description: "the pools' timers: the start ping, and a failed action's retries",
+		// The pools table is the alarm's schedule: no jobs table, so a closed pool can't fire.
+		sql: `
+			ALTER TABLE pools ADD COLUMN start_pinged   INTEGER NOT NULL DEFAULT 0;
+			ALTER TABLE pools ADD COLUMN timer_attempts INTEGER NOT NULL DEFAULT 0;
+			ALTER TABLE pools ADD COLUMN timer_retry_at INTEGER;
+		`,
+	},
 ];
 
 /** Each migration commits with its own row, so one that fails halfway leaves nothing behind. */

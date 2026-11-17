@@ -1,11 +1,11 @@
 import { DurableObject } from 'cloudflare:workers';
 import { type Bot, BotError, type Middleware } from 'grammy';
 import type { Update } from 'grammy/types';
-import { createBot, FEATURES } from '../bot';
+import { createBot, FEATURES, TIMERS } from '../bot';
 import { type BotContext, UpdateRoom } from '../context';
 import { type RoomSettings, readRoomSettings } from '../settings';
 import { canRedeliver, redeliveryCapReached } from './failure-policy';
-import { Room } from './room';
+import { Room, type Timers } from './room';
 import { MIGRATIONS, migrate } from './schema';
 import { SerialQueue } from './serial-queue';
 import { isProcessed, pruneUpdateLog, recordFailure, recordProcessed } from './update-log';
@@ -19,6 +19,7 @@ export class ChatRoom extends DurableObject<Env> {
 	clock: () => number = Date.now;
 	random: () => number = randomFraction;
 	features: readonly Middleware<BotContext>[] = FEATURES;
+	timers: Timers = TIMERS;
 
 	readonly #settings: RoomSettings;
 	readonly #queue = new SerialQueue();
@@ -33,7 +34,40 @@ export class ChatRoom extends DurableObject<Env> {
 
 	/** Resolves once the update has been processed; updates run one at a time, in order. */
 	handleUpdate(update: Update): Promise<void> {
-		return this.#queue.run(() => this.#process(update));
+		return this.#queue.run(async () => {
+			try {
+				await this.#process(update);
+			} finally {
+				await this.#armAfterTask();
+			}
+		});
+	}
+
+	/** Runs the due timer actions in the same queue, so they never interleave with an update. */
+	alarm(): Promise<void> {
+		return this.#queue.run(() => this.#runTimers());
+	}
+
+	async #runTimers(): Promise<void> {
+		const { room } = this.#ensureRuntime();
+		try {
+			await this.timers.run(room);
+		} catch (error) {
+			// Re-arming now could point at a past time and loop; Cloudflare stops after 6 retries.
+			console.error('The alarm failed; it runs again in a minute', error);
+			await room.retryAlarmSoon();
+			return;
+		}
+		await this.#armAfterTask();
+	}
+
+	/** An alarm lost for any reason comes back with the next task. */
+	async #armAfterTask(): Promise<void> {
+		try {
+			await this.#ensureRuntime().room.armIfChanged();
+		} catch (error) {
+			console.error('Re-arming the alarm failed', error);
+		}
 	}
 
 	/** Rejects, so the Worker answers 500 and Telegram redelivers, only as the policy allows. */
@@ -82,6 +116,7 @@ export class ChatRoom extends DurableObject<Env> {
 			api: bot.api,
 			clock: () => this.clock(),
 			random: () => this.random(),
+			nextDue: (sql, now) => this.timers.nextDue(sql, now),
 		});
 		this.#runtime = { bot, room };
 		return this.#runtime;
