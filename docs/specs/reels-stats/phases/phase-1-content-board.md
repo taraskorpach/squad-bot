@@ -35,11 +35,11 @@ needs: []
 
 ## Deliverables
 
-- [ ] Migration 6: `events` gains `ref` and `message_id`, indexed on `(kind, ref)`; old events kept and the five boards unchanged
-- [ ] `postOf` for Instagram and Threads: every such link in design.md → *What counts* gives its id, and their non-posts give nothing
-- [ ] `postOf` for TikTok and YouTube: the same, and `postRefs` gives each post of a message once
-- [ ] A message with posts records one `share` event per distinct post (sender, sent time, `{platform}:{id}`, message id) from its text, caption or hidden links, a command's message included; once per update, and no Telegram call
-- [ ] `/stats` shows `🍿 Скидає контент` after `🏠 /domikpisik`, each post once per person, and mvp's design.md says six boards
+- [x] Migration 6: `events` gains `ref` and `message_id`, indexed on `(kind, ref)`; old events kept and the five boards unchanged
+- [x] `postOf` for Instagram and Threads: every such link in design.md → *What counts* gives its id, and their non-posts give nothing
+- [x] `postOf` for TikTok and YouTube: the same, and `postRefs` gives each post of a message once
+- [x] A message with posts records one `share` event per distinct post (sender, sent time, `{platform}:{id}`, message id) from its text, caption or hidden links, a command's message included; once per update, and no Telegram call
+- [x] `/stats` shows `🍿 Скидає контент` after `🏠 /domikpisik`, each post once per person, and mvp's design.md says six boards
 
 ## Phase-local notes
 

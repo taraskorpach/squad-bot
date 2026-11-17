@@ -7,11 +7,18 @@ needs to know exist to navigate the code — not every file that's touched.
 
 | File | Role | Phase |
 |------|------|-------|
+| `src/shares/share-links.ts` | What counts as a post: one reader per platform, `postOf` and `postRefs` (`{platform}:{id}`) | 1 |
+| `src/shares/share-handlers.ts` | `trackShares`: first in `FEATURES`, records one `share` event per post after the rest have run | 1 |
+| `test/helpers/links.ts` | Test messages with the entities Telegram adds: links, a caption, a hidden link | 1 |
 
 ## Existing files touched
 
 | File | Why we care | Ledger |
 |------|-------------|--------|
+| `src/chat/schema.ts` | Migration 6: `events.ref`, `events.message_id`, index on `(kind, ref)` | |
+| `src/stats/event-store.ts` | `share` kind; `StatEvent.ref` and `messageId` | |
+| `src/stats/stats-queries.ts` | `ONCE_FOR_EACH_POST`: each post once per person | |
+| `src/bot.ts` | `trackShares` first in `FEATURES` | `gotcha-commands-end-the-feature-chain` |
 
 ## External references
 

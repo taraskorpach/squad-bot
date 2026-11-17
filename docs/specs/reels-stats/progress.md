@@ -13,5 +13,5 @@
 
 ## Phases
 
-- [ ] Phase 1 — Posts on the board → `phases/phase-1-content-board.md`
+- [x] Phase 1 — Posts on the board → `phases/phase-1-content-board.md`
 - [ ] Phase 2 — The баян and 👀 → `phases/phase-2-bayan-and-reaction.md`
