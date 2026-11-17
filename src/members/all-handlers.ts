@@ -1,4 +1,5 @@
 import { Composer } from 'grammy';
+import { attempt } from '../chat/attempt';
 import type { BotContext } from '../context';
 import { recordEvent } from '../stats/event-store';
 import { MESSAGE_FORMAT, sentAt } from '../telegram';
@@ -25,7 +26,7 @@ tagAll.command('all', async (ctx) => {
 	});
 	if (ctx.room.stale) return;
 	if (!ctx.room.throttle.claim('all', ctx.room.clock(), TAG_WINDOW_MS)) {
-		await attempt('the 👌 for a repeat', () => ctx.react('👌'));
+		await attempt('/all: the 👌 for a repeat', () => ctx.react('👌'));
 		return;
 	}
 	const mentions = mentionsOf(tagTargets(inChat, caller.id), inChat);
@@ -34,7 +35,7 @@ tagAll.command('all', async (ctx) => {
 			? chunk(mentions, ctx.room.mentionChunk).map(texts.tags)
 			: [texts.all.nobodyToTag];
 	for (const text of replies) {
-		await attempt('a reply', () => ctx.reply(text, replyingTo(ctx.msg.message_id)));
+		await attempt('/all: a reply', () => ctx.reply(text, replyingTo(ctx.msg.message_id)));
 	}
 });
 
@@ -43,13 +44,4 @@ function replyingTo(messageId: number) {
 		...MESSAGE_FORMAT,
 		reply_parameters: { message_id: messageId, allow_sending_without_reply: true },
 	};
-}
-
-/** After the commit nothing is redelivered: a failed call is logged, and the next one still goes. */
-async function attempt(what: string, call: () => Promise<unknown>): Promise<void> {
-	try {
-		await call();
-	} catch (error) {
-		console.error(`/all: ${what} failed`, error);
-	}
 }
