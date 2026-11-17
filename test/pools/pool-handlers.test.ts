@@ -74,6 +74,10 @@ describe('/pool', () => {
 							{ text: '✅ Граю', callback_data: `p:${pool?.id}:in`, style: 'success' },
 							{ text: '❌ Пас', callback_data: `p:${pool?.id}:out`, style: 'danger' },
 						],
+						[
+							{ text: '🔔 Нагадати', callback_data: `p:${pool?.id}:ping` },
+							{ text: '✖️ Закрити', callback_data: `p:${pool?.id}:close` },
+						],
 					],
 				},
 			},
@@ -265,5 +269,46 @@ describe('/join', () => {
 
 		expect(await joined(stub)).toEqual([]);
 		expect(telegram.calls()).toEqual([]);
+	});
+});
+
+describe('/pools', () => {
+	const chat = String(CHAT_ID).replace(/^-100/, '');
+
+	it('lists the open pools, each with its start, its fill and a link to its card', async () => {
+		const stub = await roomKnowing([users.taras, users.oleg]);
+		await stub.handleUpdate(poolCommand('/pool cs2 21:00'));
+		await stub.handleUpdate(poolCommand('/pool dota 2'));
+		await stub.handleUpdate(poolCommand('/pool lol'));
+		await runInDurableObject(stub, (_room, state) => {
+			state.storage.sql.exec("UPDATE pools SET status = 'closed' WHERE game = 'lol'");
+		});
+		const [cs2, dota] = await rows(stub, 'SELECT message_id FROM pools ORDER BY id');
+		telegram.reset();
+		const call = command('/pools', { from: users.oleg, date: OPENED_AT / 1000 });
+
+		await stub.handleUpdate(call);
+
+		expect(telegram.callsTo('sendMessage')).toEqual([
+			{
+				chat_id: CHAT_ID,
+				text: [
+					'Відкриті пули:',
+					`• cs2 · сьогодні о 21:00 · 1/5 → <a href="https://t.me/c/${chat}/${cs2?.message_id}">картка</a>`,
+					`• dota · зараз · 1/2 → <a href="https://t.me/c/${chat}/${dota?.message_id}">картка</a>`,
+				].join('\n'),
+				...replyTo(call.message?.message_id),
+			},
+		]);
+	});
+
+	it('says none is open, and how to open one', async () => {
+		const stub = await roomKnowing([users.oleg]);
+
+		await stub.handleUpdate(command('/pools', { from: users.oleg, date: OPENED_AT / 1000 }));
+
+		expect(telegram.callsTo('sendMessage').map((payload) => payload.text)).toEqual([
+			'Зараз немає відкритих пулів. Відкрий: /pool',
+		]);
 	});
 });

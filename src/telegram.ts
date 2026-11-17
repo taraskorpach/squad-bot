@@ -22,6 +22,12 @@ export const HI_CALLBACK = 'hi';
 /** grammY's default of 500 s would let one hung call hold the chat's queue for minutes. */
 export const API_TIMEOUT_SECONDS = 10;
 
+/**
+ * Telegram lets a bot send 20 messages a minute to a group. /all and each pool's 🔔 tag at most
+ * once per this window, so the pools' other messages still get through.
+ */
+export const TAG_WINDOW_MS = 30 * 1000;
+
 /** How the bot sends every message: HTML, which mentions need, and no link previews. */
 export const MESSAGE_FORMAT = {
 	parse_mode: 'HTML',

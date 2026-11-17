@@ -5,11 +5,14 @@ import { replyingTo, sentAt } from '../telegram';
 import { texts } from '../texts';
 import { applyAnswer, openPool, showAnswer } from './pool-actions';
 import { parsePoolArgs, startOf } from './pool-args';
-import { argsErrorText } from './pool-messages';
-import { joinTarget } from './pool-rules';
-import { newestOpenPool, poolOfMessage } from './pool-store';
+import { argsErrorText, openPoolsText } from './pool-messages';
+import { joinTarget, lineupOf } from './pool-rules';
+import { answersOf, newestOpenPool, openPools, poolOfMessage } from './pool-store';
 
-/** `/pool [гра] [розмір] [час]` opens a pool; `/join` answers Граю without a tap. */
+/**
+ * `/pool [гра] [розмір] [час]` opens a pool; `/join` answers Граю without a tap; `/pools` lists
+ * the open ones.
+ */
 export const pooling = new Composer<BotContext>();
 
 pooling.command('pool', async (ctx) => {
@@ -54,4 +57,16 @@ pooling.command('join', async (ctx) => {
 	// The card shows the result; a reaction answers without another message.
 	await attempt('pools: the 👌 for /join', () => ctx.react('👌'));
 	await showAnswer(ctx.room, target.poolId, result.decision);
+});
+
+pooling.command('pools', async (ctx) => {
+	if (ctx.room.stale) return;
+	const listed = ctx.room.read((sql) =>
+		openPools(sql).map((pool) => {
+			const { players, bench } = lineupOf(pool.size, answersOf(sql, pool.id), []);
+			return { pool, players: players.length, bench: bench.length };
+		}),
+	);
+	const text = openPoolsText(listed, ctx.room.chatId, ctx.room.clock());
+	await ctx.reply(text, replyingTo(ctx.msg.message_id));
 });

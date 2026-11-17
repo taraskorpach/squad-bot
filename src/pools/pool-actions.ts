@@ -3,9 +3,26 @@
 import type { RoomAccess } from '../chat/room';
 import { recordEvent } from '../stats/event-store';
 import { cardState, mentionsIn, postCard, postUnderCard, refreshCard } from './pool-card';
-import { movedUpText, squadCompleteText } from './pool-messages';
-import { type AnswerDecision, answer, type Choice, closingTime } from './pool-rules';
-import { answersOf, insertPool, markSquadAnnounced, poolById, saveAnswer } from './pool-store';
+import { closedByAuthorText, drawText, movedUpText, squadCompleteText } from './pool-messages';
+import {
+	type AnswerDecision,
+	answer,
+	type Choice,
+	closingTime,
+	type DrawRefusal,
+	draw,
+	drawRefusal,
+	lineupOf,
+} from './pool-rules';
+import {
+	answersOf,
+	closeOpenPool,
+	insertPool,
+	markSquadAnnounced,
+	poolById,
+	saveAnswer,
+	saveDraw,
+} from './pool-store';
 
 export interface PoolRequest {
 	game: string;
@@ -20,6 +37,12 @@ export interface PoolRequest {
 
 export type AnswerResult =
 	| { kind: 'answered'; decision: AnswerDecision }
+	| { kind: 'closed' }
+	| { kind: 'missing' };
+
+export type DrawOutcome =
+	| { kind: 'drawn'; squad: number[]; bench: number[] }
+	| { kind: 'refused'; refusal: DrawRefusal }
 	| { kind: 'closed' }
 	| { kind: 'missing' };
 
@@ -82,4 +105,61 @@ export async function showAnswer(
 		const [mention = ''] = mentionsIn(state, [userId]);
 		await postUnderCard(room, poolId, pool.messageId, movedUpText(mention, pool.game));
 	}
+}
+
+/** 🎲: picks the squad once and renumbers the line, in one commit, checked as stored. */
+export function commitDraw(room: RoomAccess, poolId: number, userId: number): DrawOutcome {
+	return room.tx((sql): DrawOutcome => {
+		const pool = poolById(sql, poolId);
+		if (!pool) return { kind: 'missing' };
+		if (pool.status === 'closed') return { kind: 'closed' };
+		const answers = answersOf(sql, poolId);
+		const refusal = drawRefusal(pool.drawn, lineupOf(pool.size, answers, []), userId);
+		if (refusal) return { kind: 'refused', refusal };
+		const result = draw(pool.size, answers, () => room.random());
+		saveDraw(sql, poolId, result.answers);
+		return { kind: 'drawn', squad: result.squad, bench: result.bench };
+	});
+}
+
+/** The draw, shown: the card notes it, then the whole squad and bench are tagged under it. */
+export async function showDraw(
+	room: RoomAccess,
+	poolId: number,
+	squad: readonly number[],
+	bench: readonly number[],
+): Promise<void> {
+	await refreshCard(room, poolId);
+	const state = room.read((sql) => cardState(sql, poolId));
+	if (!state) return;
+	const text = drawText(mentionsIn(state, squad), mentionsIn(state, bench));
+	await postUnderCard(room, poolId, state.pool.messageId, text);
+}
+
+/** Closes a pool that is still open; false when it already was. */
+export function commitClose(room: RoomAccess, poolId: number, by: 'auto' | 'author'): boolean {
+	return room.tx((sql) => closeOpenPool(sql, poolId, by));
+}
+
+/** The close, shown: the card turns final; the author's close tags the others who said Граю. */
+export async function showClose(room: RoomAccess, poolId: number): Promise<void> {
+	await refreshCard(room, poolId);
+	const state = room.read((sql) => cardState(sql, poolId));
+	if (state?.pool.closedBy !== 'author') return;
+	const { pool, lineup } = state;
+	const others = [...lineup.players, ...lineup.bench].filter((id) => id !== pool.authorId);
+	if (others.length === 0) return;
+	const text = closedByAuthorText(pool.game, pool.startsAt, mentionsIn(state, others));
+	await postUnderCard(room, poolId, pool.messageId, text);
+}
+
+/** The one way a pool closes: the author's ✖️ now, and its three hours from phase 8's alarm. */
+export async function closePool(
+	room: RoomAccess,
+	poolId: number,
+	by: 'auto' | 'author',
+): Promise<boolean> {
+	if (!commitClose(room, poolId, by)) return false;
+	await showClose(room, poolId);
+	return true;
 }

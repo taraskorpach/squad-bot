@@ -28,10 +28,11 @@ export function renderCard(
 	const text = [
 		texts.pool.card.header(escapeHtml(pool.game), pool.size, when),
 		authorLine(pool, escapeHtml(nameOf(pool.authorId))),
+		...(pool.drawn ? [texts.pool.card.drawn] : []),
 		'',
 		...answerLines(pool, lineup, nameOf),
 	].join('\n');
-	return open ? { text, keyboard: poolKeyboard(pool.id) } : { text };
+	return open ? { text, keyboard: poolKeyboard(pool, lineup) } : { text };
 }
 
 /** An open card's start: now, today, tomorrow, or the date of a start a day behind. */

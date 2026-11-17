@@ -3,7 +3,8 @@ import type { User } from 'grammy/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { poolTaps } from '../../src/pools/pool-callbacks';
 import { pooling } from '../../src/pools/pool-handlers';
-import { type RoomStub, roomWith, rows } from '../helpers/rooms';
+import type { PoolAction } from '../../src/pools/pool-keyboards';
+import { type RoomSeams, type RoomStub, roomWith, rows } from '../helpers/rooms';
 import { telegram } from '../helpers/telegram';
 import { CHAT_ID, command, tap, textMessage, users } from '../helpers/updates';
 
@@ -18,8 +19,12 @@ beforeEach(() => {
 });
 
 /** A room that knows these people, where Тарас has just opened `/pool cs2 {size}`. */
-async function poolOf(size: number, people: User[] = [taras, oleg, andriy, ihor]) {
-	const stub = await roomWith([pooling, poolTaps], { clock: () => TAPPED_AT });
+async function poolOf(
+	size: number,
+	people: User[] = [taras, oleg, andriy, ihor],
+	seams: RoomSeams = {},
+) {
+	const stub = await roomWith([pooling, poolTaps], { clock: () => TAPPED_AT, ...seams });
 	for (const person of people) await stub.handleUpdate(textMessage('привіт', { from: person }));
 	await stub.handleUpdate(command(`/pool cs2 ${size}`, { from: taras, date: OPENED_AT / 1000 }));
 	const [pool] = await rows(stub, 'SELECT id, message_id FROM pools');
@@ -27,8 +32,16 @@ async function poolOf(size: number, people: User[] = [taras, oleg, andriy, ihor]
 	return { stub, poolId: Number(pool?.id), cardId: Number(pool?.message_id) };
 }
 
-function tapOn(card: { poolId: number; cardId: number }, action: 'in' | 'out', from: User) {
+function tapOn(card: { poolId: number; cardId: number }, action: PoolAction, from: User) {
 	return tap(`p:${card.poolId}:${action}`, { from, messageId: card.cardId });
+}
+
+function replyToCard(card: { cardId: number }) {
+	return {
+		parse_mode: 'HTML',
+		link_preview_options: { is_disabled: true },
+		reply_parameters: { message_id: card.cardId, allow_sending_without_reply: true },
+	};
 }
 
 function link(user: User): string {
@@ -168,5 +181,154 @@ describe('✅ and ❌', () => {
 
 		expect(telegram.callsTo('answerCallbackQuery')).toHaveLength(1);
 		expect(await answersIn(card.stub)).toHaveLength(1);
+	});
+});
+
+describe('🔔', () => {
+	it('tags whoever has yet to answer, under the card, and says how many', async () => {
+		const card = await poolOf(5);
+
+		await card.stub.handleUpdate(tapOn(card, 'ping', oleg));
+
+		expect(toasts()).toEqual(['Нагадав: 3']);
+		expect(telegram.callsTo('sendMessage')).toEqual([
+			{
+				chat_id: CHAT_ID,
+				text: `🔔 Чекаємо на відповідь: ${[andriy, ihor, oleg].map(link).join(', ')}`,
+				...replyToCard(card),
+			},
+		]);
+	});
+
+	it('tags at most once per 30 s per pool, and says so to a repeat', async () => {
+		let now = TAPPED_AT;
+		const card = await poolOf(5, undefined, { clock: () => now });
+
+		await card.stub.handleUpdate(tapOn(card, 'ping', oleg));
+		now += 29 * 1000;
+		await card.stub.handleUpdate(tapOn(card, 'ping', andriy));
+		now += 2 * 1000;
+		await card.stub.handleUpdate(tapOn(card, 'ping', andriy));
+
+		expect(toasts()).toEqual(['Нагадав: 3', 'Щойно нагадав — спробуй трохи згодом', 'Нагадав: 3']);
+		expect(telegram.callsTo('sendMessage')).toHaveLength(2);
+	});
+
+	it('says everyone has answered when nobody is left to tag', async () => {
+		const card = await poolOf(5, [taras, oleg]);
+		await card.stub.handleUpdate(tapOn(card, 'out', oleg));
+		telegram.reset();
+
+		await card.stub.handleUpdate(tapOn(card, 'ping', taras));
+
+		expect(toasts()).toEqual(['Усі вже відповіли']);
+		expect(telegram.callsTo('sendMessage')).toEqual([]);
+	});
+});
+
+describe('🎲', () => {
+	/** Тарас, Олег and Андрій play for two seats; the draw always picks the last left in line. */
+	async function overfull() {
+		const card = await poolOf(2, undefined, { random: () => 0.99 });
+		await card.stub.handleUpdate(tapOn(card, 'in', oleg));
+		await card.stub.handleUpdate(tapOn(card, 'in', andriy));
+		telegram.reset();
+		return card;
+	}
+
+	it('draws the squad from everyone playing, renumbers the line, and tags squad and bench', async () => {
+		const card = await overfull();
+
+		await card.stub.handleUpdate(tapOn(card, 'draw', oleg));
+
+		expect(toasts()).toEqual(['Жереб кинуто 🎲']);
+		expect(await answersIn(card.stub)).toEqual([
+			{ user_id: oleg.id, choice: 'play', rank: 1 },
+			{ user_id: andriy.id, choice: 'play', rank: 2 },
+			{ user_id: taras.id, choice: 'play', rank: 3 },
+		]);
+		const [edit] = telegram.callsTo('editMessageText');
+		expect(String(edit?.text).split('\n').slice(1, 6)).toEqual([
+			'Автор: Тарас',
+			'🎲 Склад визначено жеребом',
+			'',
+			'✅ Грають (2/2): Олег, Андрій',
+			'🪑 Лава: Тарас',
+		]);
+		expect(telegram.callsTo('sendMessage')).toEqual([
+			{
+				chat_id: CHAT_ID,
+				text: `🎲 Жереб кинуто. У склад: ${link(andriy)}, ${link(oleg)}. На лаву: ${link(taras)}.`,
+				...replyToCard(card),
+			},
+		]);
+	});
+
+	it('is drawn once, by a player only', async () => {
+		const card = await overfull();
+
+		await card.stub.handleUpdate(tapOn(card, 'draw', ihor));
+		await card.stub.handleUpdate(tapOn(card, 'draw', oleg));
+		await card.stub.handleUpdate(tapOn(card, 'draw', oleg));
+
+		expect(toasts()).toEqual([
+			'Жереб кидають ті, хто в пулі',
+			'Жереб кинуто 🎲',
+			'Жереб уже кинули',
+		]);
+	});
+
+	it('is not needed while nobody sits on the bench', async () => {
+		const card = await poolOf(5);
+
+		await card.stub.handleUpdate(tapOn(card, 'draw', taras));
+
+		expect(toasts()).toEqual(['Лава порожня — жереб не потрібен']);
+		expect(await rows(card.stub, 'SELECT drawn FROM pools')).toEqual([{ drawn: 0 }]);
+	});
+});
+
+describe('✖️', () => {
+	it("closes the author's pool: the card turns final, and the others who said Граю are tagged", async () => {
+		const card = await poolOf(5);
+		await card.stub.handleUpdate(tapOn(card, 'in', oleg));
+		await card.stub.handleUpdate(tapOn(card, 'in', andriy));
+		await card.stub.handleUpdate(tapOn(card, 'out', ihor));
+		telegram.reset();
+
+		await card.stub.handleUpdate(tapOn(card, 'close', taras));
+
+		expect(toasts()).toEqual(['Пул закрито']);
+		const [edit] = telegram.callsTo('editMessageText');
+		expect(String(edit?.text).split('\n')[1]).toBe('Автор: Тарас · 🔒 закрито автором');
+		expect(edit?.reply_markup).toBeUndefined();
+		expect(telegram.callsTo('sendMessage')).toEqual([
+			{
+				chat_id: CHAT_ID,
+				text: `✖️ Пул на cs2 закрито автором. ${link(andriy)}, ${link(oleg)}`,
+				...replyToCard(card),
+			},
+		]);
+		expect(await rows(card.stub, 'SELECT status, closed_by FROM pools')).toEqual([
+			{ status: 'closed', closed_by: 'author' },
+		]);
+	});
+
+	it('stays open when anyone but the author presses it', async () => {
+		const card = await poolOf(5);
+
+		await card.stub.handleUpdate(tapOn(card, 'close', oleg));
+
+		expect(toasts()).toEqual(['Закрити може лише автор']);
+		expect(await rows(card.stub, 'SELECT status FROM pools')).toEqual([{ status: 'open' }]);
+	});
+
+	it('closes without a message when nobody else said Граю', async () => {
+		const card = await poolOf(5);
+
+		await card.stub.handleUpdate(tapOn(card, 'close', taras));
+
+		expect(toasts()).toEqual(['Пул закрито']);
+		expect(telegram.callsTo('sendMessage')).toEqual([]);
 	});
 });

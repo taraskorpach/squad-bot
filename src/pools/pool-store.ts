@@ -112,8 +112,38 @@ export function saveAnswer(sql: SqlStorage, poolId: number, answer: Answer): voi
 	);
 }
 
+export function openPools(sql: SqlStorage): Pool[] {
+	return sql
+		.exec<PoolRow>("SELECT * FROM pools WHERE status = 'open' ORDER BY opened_at, id")
+		.toArray()
+		.map(poolOf);
+}
+
 export function markSquadAnnounced(sql: SqlStorage, poolId: number): void {
 	sql.exec('UPDATE pools SET squad_announced = 1 WHERE id = ?', poolId);
+}
+
+/** The draw's new line: every play renumbered, and the draw marked used. */
+export function saveDraw(sql: SqlStorage, poolId: number, plays: readonly Answer[]): void {
+	for (const given of plays) {
+		sql.exec(
+			'UPDATE answers SET rank = ? WHERE pool_id = ? AND user_id = ?',
+			given.rank,
+			poolId,
+			given.userId,
+		);
+	}
+	sql.exec('UPDATE pools SET drawn = 1 WHERE id = ?', poolId);
+}
+
+/** Closes a pool that is still open; false when it already was closed. */
+export function closeOpenPool(sql: SqlStorage, poolId: number, by: 'auto' | 'author'): boolean {
+	const closed = sql.exec(
+		"UPDATE pools SET status = 'closed', closed_by = ? WHERE id = ? AND status = 'open'",
+		by,
+		poolId,
+	).rowsWritten;
+	return closed > 0;
 }
 
 /** The card is posted: the pool knows its message, and the message knows its pool. */

@@ -40,12 +40,8 @@ const lineup = (fields: Partial<Lineup>): Lineup => ({
 
 describe('renderCard', () => {
 	it('shows an open pool: who plays, who passed and who has yet to answer, by name', () => {
-		const card = renderCard(
-			pool,
-			lineup({ players: [1, 2], passed: [3], unanswered: [4, 5, 6, 7] }),
-			NAMES,
-			kyiv(16, 19),
-		);
+		const shown = lineup({ players: [1, 2], passed: [3], unanswered: [4, 5, 6, 7] });
+		const card = renderCard(pool, shown, NAMES, kyiv(16, 19));
 
 		expect(card).toEqual({
 			text: [
@@ -56,8 +52,20 @@ describe('renderCard', () => {
 				'❌ Пас: Андрій',
 				'⏳ Ще не відповіли: Діма, Ігор, Макс, Саша',
 			].join('\n'),
-			keyboard: poolKeyboard(7),
+			keyboard: poolKeyboard(pool, shown),
 		});
+	});
+
+	it('notes under the author that the draw picked the squad', () => {
+		const drawn: Pool = { ...pool, drawn: true };
+		const [, author, note] = renderCard(
+			drawn,
+			lineup({ players: [1] }),
+			NAMES,
+			kyiv(16, 19),
+		).text.split('\n');
+
+		expect([author, note]).toEqual(['Автор: Тарас', '🎲 Склад визначено жеребом']);
 	});
 
 	it('lists the bench once the squad is full, and only the lines that have someone', () => {

@@ -2,17 +2,11 @@ import { Composer } from 'grammy';
 import { attempt } from '../chat/attempt';
 import type { BotContext } from '../context';
 import { recordEvent } from '../stats/event-store';
-import { replyingTo, sentAt } from '../telegram';
+import { replyingTo, sentAt, TAG_WINDOW_MS } from '../telegram';
 import { texts } from '../texts';
 import { membersInChat } from './member-store';
 import { chunk, mentionsOf } from './mentions';
 import { tagTargets } from './roster';
-
-/**
- * Telegram lets a bot send 20 messages a minute to a group, and the /all leaderboard invites
- * spamming it: /all tags at most once per window, so the pools' messages still get through.
- */
-const TAG_WINDOW_MS = 30 * 1000;
 
 /** `/all`: every call counts; it tags everyone in the chat but the caller. */
 export const tagAll = new Composer<BotContext>();

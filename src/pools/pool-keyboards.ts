@@ -1,8 +1,10 @@
-import type { InlineKeyboardMarkup } from 'grammy/types';
+import type { InlineKeyboardButton, InlineKeyboardMarkup } from 'grammy/types';
 import { texts } from '../texts';
+import type { Lineup } from './pool-rules';
+import type { Pool } from './pool-store';
 
-/** What a pool's buttons do. Phase 7 adds 🔔, 🎲 and ✖️ here. */
-const ACTIONS = ['in', 'out'] as const;
+/** What a pool's buttons do. */
+const ACTIONS = ['in', 'out', 'ping', 'draw', 'close'] as const;
 export type PoolAction = (typeof ACTIONS)[number];
 
 // `p:{pool}:{action}`, far under Telegram's 64 bytes. The welcome's 👋 is `hi`.
@@ -19,15 +21,32 @@ export function decodePoolAction(data: string): { poolId: number; action: PoolAc
 	return { poolId: Number(match[1]), action: match[2] as PoolAction };
 }
 
-/** An open card's buttons. A closed card has none. */
-export function poolKeyboard(poolId: number): InlineKeyboardMarkup {
-	const { playButton, passButton } = texts.pool.card;
+/**
+ * An open card's buttons: Граю and Пас, then 🎲 while plays exceed the seats and the draw is
+ * unused, 🔔 while someone hasn't answered, and ✖️, which only the author's press closes.
+ * A closed card has none.
+ */
+export function poolKeyboard(
+	pool: Pick<Pool, 'id' | 'drawn'>,
+	lineup: Pick<Lineup, 'bench' | 'unanswered'>,
+): InlineKeyboardMarkup {
+	const { card } = texts.pool;
+	const button = (text: string, action: PoolAction): InlineKeyboardButton.CallbackButton => ({
+		text,
+		callback_data: encodePoolAction(pool.id, action),
+	});
+	const extras = [
+		...(lineup.bench.length > 0 && !pool.drawn ? [button(card.drawButton, 'draw')] : []),
+		...(lineup.unanswered.length > 0 ? [button(card.pingButton, 'ping')] : []),
+		button(card.closeButton, 'close'),
+	];
 	return {
 		inline_keyboard: [
 			[
-				{ text: playButton, callback_data: encodePoolAction(poolId, 'in'), style: 'success' },
-				{ text: passButton, callback_data: encodePoolAction(poolId, 'out'), style: 'danger' },
+				{ ...button(card.playButton, 'in'), style: 'success' },
+				{ ...button(card.passButton, 'out'), style: 'danger' },
 			],
+			extras,
 		],
 	};
 }
