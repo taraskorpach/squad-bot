@@ -30,11 +30,11 @@ needs: [1]
 
 ## Deliverables
 
-- [ ] `firstEventAbout`: the first event about a post, in the order the bot recorded them, with who, when and which message
-- [ ] `messageLink` in `src/telegram.ts`, and `/pools` links its cards as before
-- [ ] The баян's line: `🪗 Баян! Уже було — {name}, {when} → оригінал`, with `{when}` as `сьогодні о 21:40`, `вчора о 21:40`, `12.11` or `12.11.2026`
-- [ ] A post the chat has seen gets the баян reply, a line per such post, the sender's own repeat included; the count is unchanged
-- [ ] A post new to the chat gets 👀; a stale message gets neither; a failed reply or reaction is logged and the count stands
+- [x] `firstEventAbout`: the first event about a post, in the order the bot recorded them, with who, when and which message
+- [x] `messageLink` in `src/telegram.ts`, and `/pools` links its cards as before
+- [x] The баян's line: `🪗 Баян! Уже було — {name}, {when} → оригінал`, with `{when}` as `сьогодні о 21:40`, `вчора о 21:40`, `12.11` or `12.11.2026`
+- [x] A post the chat has seen gets the баян reply, a line per such post, the sender's own repeat included; the count is unchanged
+- [x] A post new to the chat gets 👀; a stale message gets neither; a failed reply or reaction is logged and the count stands
 
 ## Phase-local notes
 
