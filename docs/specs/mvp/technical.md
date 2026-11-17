@@ -89,6 +89,10 @@ The storage and Telegram handle shared by every write path, updates and alarms a
   - `ctx.room.commit(fn)` is `room.tx((sql) => { recordUpdateOnce(sql); return fn(sql); })`.
   - `recordUpdateOnce` is an `INSERT OR IGNORE` into `processed_updates`, so a second commit in the same update is harmless.
   - It carries the update's flags: `committed`, `delivered` and `stale`.
+- `RoomAccess` (phase 6) is what an action needs of a room: `tx`, `write`, `read`, `clock`, `random`, `chatId`, `mentionChunk` and `api`.
+  - `Room` and `ctx.room` both satisfy it. On `ctx.room`, `tx` is `commit`, so an action called from a handler records the update with its change.
+  - The alarm passes the plain `Room`.
+- After a commit, every Telegram call goes through `attempt(label, call)` (`src/chat/attempt.ts`). A failure is logged, the next call still goes, and the call's result comes back, or nothing.
 
 ### Processing one update
 1. If `processed_updates` holds the `update_id`, stop: it is a redelivery.
@@ -297,13 +301,18 @@ None of these imports grammY or touches storage; time and randomness come in as 
 
   A pool with `timer_retry_at` set is due no earlier than that time.
 
-## Pool actions (`src/pools/pool-actions.ts`, phases 6–8)
+## Pool actions (`src/pools/pool-actions.ts`, `src/pools/pool-card.ts`, phases 6–8)
 
-The side effects shared by callbacks, `/join` and timers. They are written against `Room`, never against a grammY context, because `alarm()` has none.
+The side effects shared by callbacks, `/join` and timers. They are written against `RoomAccess`, never against a grammY context, because `alarm()` has none.
 
-- `applyAnswer(room, poolId, userId, choice)` commits the answer and its event. It returns what changed: the toast, move-ups, and whether the squad just completed.
-- `refreshCard(room, poolId)` renders the card and edits it when it changed.
-- `postCard(room, poolId)` posts the card and the opening tag message, records both in `pool_messages`, and stores `message_id`.
+- `openPool(room, request)` commits the pool, the author's answer and the `pool_open` and `join` events, then calls `postCard`.
+- `applyAnswer(room, poolId, userId, choice, at)` commits the answer and its event, and the squad's flag the first time it fills. It returns the decision: the outcome for the toast, the move-ups, and whether the squad just completed. For a closed or missing pool it returns that instead.
+- `showAnswer(room, poolId, decision)` refreshes the card, then posts the squad's message and each move-up under it.
+- In `pool-card.ts`:
+  - `cardState(sql, poolId)` reads what a card shows: the pool, its lineup, and everyone on it, leavers included.
+  - `refreshCard(room, poolId)` renders the card and edits it when it changed.
+  - `postCard(room, poolId, replyTo?)` posts the card and the opening tag messages, records them all in `pool_messages`, and stores `message_id`.
+  - `postUnderCard(room, poolId, cardId, text)` posts one message under the card and records it.
 - `closePool(room, poolId, reason)` (phase 7) commits the close and renders the final card. When the author closes, it tags everyone else who said Граю.
 - The announcements: squad complete, a move-up, the draw.
 - A tap on a card of a pool whose `message_id` is NULL adopts the tapped message as the card: the card was posted, but its id was never stored.
@@ -497,6 +506,8 @@ src/
                     policy, alarm, arming                                    phases 2, 8
     room.ts         Room: tx, write, clock, random, chatId, api              phase 2
                     mentionChunk, throttle                                   phase 3
+                    RoomAccess, read                                         phase 6
+    attempt.ts      a Telegram call after a commit, logged on failure       phase 6
     throttle.ts     when each keyed action last ran, in memory              phase 3
     schema.ts       ordered migrations                                       phases 2, 3, 6, 8
   members/
@@ -504,7 +515,9 @@ src/
     mentions.ts, all-handlers.ts                                             phase 3
   pools/
     pool-args.ts, pool-rules.ts, pool-format.ts, pool-keyboards.ts           phases 6, 7
-    pool-store.ts, pool-actions.ts, pool-handlers.ts, pool-callbacks.ts      phases 6, 7, 8
+    pool-messages.ts  replies, the messages under a card, toasts            phases 6, 7
+    pool-store.ts, pool-actions.ts, pool-card.ts                             phases 6, 7, 8
+    pool-handlers.ts, pool-callbacks.ts                                      phases 6, 7
     pool-timers.ts  timer planner and actions                                phase 8
   stats/
     event-store.ts, domikpisik-handlers.ts                                   phase 3

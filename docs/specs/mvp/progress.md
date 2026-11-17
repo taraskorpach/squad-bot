@@ -19,7 +19,7 @@
 - [x] Phase 3 — Members, /all and /domikpisik → `phases/phase-3-members-and-all.md`
 - [x] Phase 4 — Setup script and deploy pipeline → `phases/phase-4-setup-and-deploy.md`
 - [ ] Phase 5 — Go live with /all → `phases/phase-5-go-live.md`
-- [ ] Phase 6 — Pools: open, answer, bench → `phases/phase-6-pools-core.md`
+- [x] Phase 6 — Pools: open, answer, bench → `phases/phase-6-pools-core.md`
 - [ ] Phase 7 — Pool buttons and /pools → `phases/phase-7-pool-buttons.md`
 - [ ] Phase 8 — Pool timers → `phases/phase-8-pool-timers.md`
 - [ ] Phase 9 — Stats → `phases/phase-9-stats.md`

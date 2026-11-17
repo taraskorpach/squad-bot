@@ -150,6 +150,8 @@ The ⚠️ line appears when the bot isn't an admin at the moment the welcome is
   The label is recomputed on every render, and open cards are re-rendered at Kyiv midnight, so
   "сьогодні" and "завтра" stay true.
 - `✅ Грають ({n}/{size}): {names | —}` always; `🪑 Лава`, `❌ Пас` and `⏳ Ще не відповіли` only when not empty.
+- Players and the bench are in line order and passes in the order they came. "Ще не відповіли" is in name order, so the same pool always renders the same card (phase 6).
+- A start already a day behind, for a pool still open after midnight, shows its date: `16.11 о 23:30`.
 - ✅ Граю uses the green button style and ❌ Пас the red one (Bot API 9.4).
 
 ### Pool card, complete with a bench
@@ -183,7 +185,7 @@ The ⚠️ line appears when the bot isn't an admin at the moment the welcome is
 ### Messages under a card (each a reply to the card)
 | When | Text |
 |---|---|
-| A pool opens | `📢 {author} збирає {game} {зараз \| на 21:00 \| на завтра, 01:00} — хто грає? {mentions}`; more mentions follow as `📢 {mentions}`. `{author}` is plain text, so the author isn't pinged |
+| A pool opens | `📢 {author} збирає {game} {зараз \| на 21:00 \| на завтра, 01:00} — хто грає? {mentions}`; more mentions follow as `📢 {mentions}`. `{author}` is plain text, so the author isn't pinged. With nobody else known, it goes out without mentions |
 | Players reach the size, first time | `🎮 Склад на {game} зібрано: {mentions}.` plus ` Старт о {HH:MM}.` when a future start time is set |
 | A bench player moves up | `{mention}, звільнилось місце — ти граєш у {game}.` |
 | 🎲 is used | `🎲 Жереб кинуто. У склад: {mentions}. На лаву: {mentions}.`, listing the whole squad and the whole bench |
