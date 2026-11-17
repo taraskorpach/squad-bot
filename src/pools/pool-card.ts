@@ -7,17 +7,11 @@ import { membersById, membersInChat } from '../members/member-store';
 import { displayNames, mentionsOf } from '../members/mentions';
 import type { Member } from '../members/roster';
 import { MESSAGE_FORMAT, replyingTo } from '../telegram';
+import { answersOf } from './answer-store';
 import { type Card, renderCard } from './pool-format';
 import { openingMessages, openingWhen } from './pool-messages';
 import { type Lineup, lineupOf } from './pool-rules';
-import {
-	answersOf,
-	type Pool,
-	poolById,
-	saveCard,
-	saveCardRender,
-	savePoolMessage,
-} from './pool-store';
+import { type Pool, poolById, saveCard, saveCardRender, savePoolMessage } from './pool-store';
 
 /** What a card shows: the pool, its lineup, and everyone on it, leavers included. */
 export interface CardState {

@@ -2,6 +2,7 @@
 // grammY context. Each action decides and writes first, then calls Telegram, each call on its own.
 import type { RoomAccess } from '../chat/room';
 import { recordEvent } from '../stats/event-store';
+import { answersOf, saveAnswer, saveDraw } from './answer-store';
 import { cardState, mentionsIn, postCard, postUnderCard, refreshCard } from './pool-card';
 import { closedByAuthorText, drawText, movedUpText, squadCompleteText } from './pool-messages';
 import {
@@ -14,15 +15,7 @@ import {
 	drawRefusal,
 	lineupOf,
 } from './pool-rules';
-import {
-	answersOf,
-	closeOpenPool,
-	insertPool,
-	markSquadAnnounced,
-	poolById,
-	saveAnswer,
-	saveDraw,
-} from './pool-store';
+import { closeOpenPool, insertPool, markSquadAnnounced, poolById } from './pool-store';
 
 export interface PoolRequest {
 	game: string;

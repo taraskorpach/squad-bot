@@ -2,7 +2,8 @@
 // so a closed pool can't fire and nothing needs cancelling.
 import { nextMidnight } from '../kyiv-time';
 import { startLabel } from './pool-format';
-import { type Pool, TIMER_BACKOFF_MS } from './pool-store';
+import type { Pool } from './pool-store';
+import { TIMER_BACKOFF_MS } from './timer-store';
 
 export type TimerAction = 'post-card' | 'start-ping' | 'close';
 

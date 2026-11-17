@@ -3,11 +3,12 @@ import { attempt } from '../chat/attempt';
 import type { BotContext } from '../context';
 import { replyingTo, sentAt } from '../telegram';
 import { texts } from '../texts';
+import { answersOf } from './answer-store';
 import { applyAnswer, openPool, showAnswer } from './pool-actions';
 import { parsePoolArgs, startOf } from './pool-args';
 import { argsErrorText, openPoolsText } from './pool-messages';
 import { joinTarget, lineupOf } from './pool-rules';
-import { answersOf, newestOpenPool, openPools, poolOfMessage } from './pool-store';
+import { newestOpenPool, openPools, poolOfMessage } from './pool-store';
 
 /**
  * `/pool [гра] [розмір] [час]` opens a pool; `/join` answers Граю without a tap; `/pools` lists
