@@ -21,4 +21,22 @@ describe('recordEvent', () => {
 			]);
 		});
 	});
+
+	it("keeps a pool's events with their pool, so the stats can count each pool once", async () => {
+		await runInDurableObject(freshRoom(), (_room, state) => {
+			const { sql } = state.storage;
+
+			recordEvent(sql, { kind: 'pool_open', userId: 1001, poolId: 7, at: 1_000 });
+			recordEvent(sql, { kind: 'join', userId: 1001, poolId: 7, at: 1_000 });
+			recordEvent(sql, { kind: 'pass', userId: 1002, poolId: 7, at: 2_000 });
+
+			expect(
+				sql.exec('SELECT kind, user_id, pool_id, at FROM events ORDER BY id').toArray(),
+			).toEqual([
+				{ kind: 'pool_open', user_id: 1001, pool_id: 7, at: 1_000 },
+				{ kind: 'join', user_id: 1001, pool_id: 7, at: 1_000 },
+				{ kind: 'pass', user_id: 1002, pool_id: 7, at: 2_000 },
+			]);
+		});
+	});
 });
