@@ -1,5 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { clockTime, dayAndMonth, daysFrom, occurrencesAround } from '../src/kyiv-time';
+import {
+	clockTime,
+	dayAndMonth,
+	daysFrom,
+	nextMidnight,
+	occurrencesAround,
+} from '../src/kyiv-time';
+
+describe('nextMidnight', () => {
+	it('is the next 00:00 on the Kyiv clock', () => {
+		// 16.11 at 23:30 in Kyiv → 17.11 at 00:00, which is 22:00 UTC on the 16th.
+		expect(nextMidnight(Date.UTC(2026, 10, 16, 21, 30))).toBe(Date.UTC(2026, 10, 16, 22));
+	});
+
+	it('moves on a whole day from midnight itself', () => {
+		expect(nextMidnight(Date.UTC(2026, 10, 16, 22))).toBe(Date.UTC(2026, 10, 17, 22));
+	});
+
+	it('follows the clocks on the night they change', () => {
+		// 28.03 at 23:00 in Kyiv (UTC+2) → 29.03 at 00:00, still before the 03:00 jump.
+		expect(nextMidnight(Date.UTC(2026, 2, 28, 21))).toBe(Date.UTC(2026, 2, 28, 22));
+		// 29.03 midday (UTC+3 by then) → 30.03 at 00:00 summer time.
+		expect(nextMidnight(Date.UTC(2026, 2, 29, 9))).toBe(Date.UTC(2026, 2, 29, 21));
+	});
+});
 
 const utc = (month: number, day: number, hour: number, minute = 0) =>
 	Date.UTC(2026, month - 1, day, hour, minute);

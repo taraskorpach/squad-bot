@@ -31,6 +31,11 @@ export function occurrencesAround(time: WallTime, ms: number): Occurrences {
 	return { yesterday: on(-1), today: on(0), tomorrow: on(1) };
 }
 
+/** The next 00:00 on the Kyiv clock: when сьогодні and завтра change their meaning. */
+export function nextMidnight(ms: number): number {
+	return inKyiv(ms).toPlainDate().add({ days: 1 }).toZonedDateTime(KYIV).epochMilliseconds;
+}
+
 /** Kyiv calendar days from `now`'s date to `ms`'s: 0 the same day, 1 the next, -1 the one before. */
 export function daysFrom(now: number, ms: number): number {
 	return inKyiv(now).toPlainDate().until(inKyiv(ms).toPlainDate(), { largestUnit: 'days' }).days;
