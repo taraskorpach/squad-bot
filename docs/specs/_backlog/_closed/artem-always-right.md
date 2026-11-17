@@ -2,6 +2,7 @@
 title: /artemisalwaysright — the bot reminds the chat that Artem is always right
 tags: [jokes]
 created: 2026-11-17T15:03:57+02:00
+resolution: done without a spec in PR #4 (d3c0101); in the command menu since PR #5 (00bb16a). Not counted on /stats, no cooldown
 ---
 Taras, 2026-11-17: "команда типу /artemisalwaysright коли пишемо, має видалятись повідомлення з
 командою і бот має писати щось типу «Нагадую, Артем Поліченко завжди правий і це не

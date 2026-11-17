@@ -28,10 +28,10 @@ needs: []
 
 ## Deliverables
 
-- [ ] Store: a size of 0 reads as no limit (`size` undefined), and no limit is written as 0
-- [ ] Rules: with no limit everyone who says Граю plays; no bench, no move-up, no squad-complete
-- [ ] Card: `🎮 {game} · без ліміту · {when}` and `✅ Грають ({n}): …`, never with 🎲
-- [ ] Messages: the start ping without `({n}/{size})`, and `/pools` showing `{n} у грі`
+- [x] Store: a size of 0 reads as no limit (`size` undefined), and no limit is written as 0
+- [x] Rules: with no limit everyone who says Граю plays; no bench, no move-up, no squad-complete
+- [x] Card: `🎮 {game} · без ліміту · {when}` and `✅ Грають ({n}): …`, never with 🎲
+- [x] Messages: the start ping without `({n}/{size})`, and `/pools` showing `{n} у грі`
 
 ## Phase-local notes
 

@@ -10,5 +10,6 @@ Warm cache for forward-propagating learnings. One row per ledger entry with its
 ## Domain
 
 ## Decisions
+- `decision-no-limit-is-size-0.md` — [general] — no seat limit is size 0 in the table, no size everywhere else
 
 ## Workarounds

@@ -13,8 +13,9 @@ new is stored: the menu lives in its buttons, and a pool without a limit is a si
   players, in line order, with an empty bench. `answer()` never reports `squadCompleted` and never
   moves anyone up. `draw()` is never reached: the keyboard shows 🎲 only while the bench holds
   someone, and `drawRefusal` answers `benchEmpty` to an old keyboard.
-- **Copy** (`texts.ts`): `card.headerNoLimit(game, when)`, `card.playersNoLimit(count, names)` and
-  `replies.fillNoLimit(players)`; the start ping leaves out `startFill`.
+- **Copy** (`texts.ts`): `card.header`, `card.players` and `replies.fill` take an optional size and
+  read `без ліміту`, `✅ Грають ({n})` and `{n} у грі` without one; `card.seats(size)` names a
+  pool's seats (`5 місць`, `без ліміту`) for the menu too. The start ping leaves out `startFill`.
 - **Callers to update:** `pool-format.ts` (header, players), `pool-messages.ts` (`/pools` fill,
   start ping), `pool-alarm.ts`, `pool-handlers.ts` (`/pools`), `pool-actions.ts` (draw),
   `pool-card.ts`. `tsc` lists every caller once `size` turns optional.
