@@ -3,6 +3,7 @@ import { Bot, type Middleware, type Transformer } from 'grammy';
 import type { UserFromGetMe } from 'grammy/types';
 import type { Timers } from './chat/room';
 import type { BotContext, UpdateRoom } from './context';
+import { artemIsAlwaysRight } from './jokes/always-right';
 import { tagAll } from './members/all-handlers';
 import { learningMembers } from './members/member-handlers';
 import { welcoming } from './members/welcome-handlers';
@@ -20,6 +21,7 @@ export const FEATURES: readonly Middleware<BotContext>[] = [
 	welcoming,
 	tagAll,
 	countDomikpisik,
+	artemIsAlwaysRight,
 	showStats,
 	pooling,
 	poolTaps,

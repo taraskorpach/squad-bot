@@ -17,13 +17,21 @@ export const texts = {
 		hiButton: HI_BUTTON,
 		hiToast: "Запам'ятав 👌",
 	},
-	/** The command menu in group chats, in its order. /domikpisik is a joke, not a feature. */
+	/** Running jokes the bot answers. */
+	jokes: {
+		alwaysRight: 'Нагадую, Артем Поліченко завжди правий і це не обговорюється.',
+	},
+	/**
+	 * The command menu in group chats, in its order. /domikpisik stays out; /artemisalwaysright is
+	 * in it, Taras's call.
+	 */
 	commandMenu: {
 		all: 'Тегнути всіх',
 		pool: 'Відкрити пул: /pool [гра] [розмір] [час]',
 		join: 'Приєднатися до пулу',
 		pools: 'Відкриті пули',
 		stats: 'Статистика',
+		artemisalwaysright: 'Нагадати, що Артем завжди правий',
 	},
 	pool: {
 		card: {
