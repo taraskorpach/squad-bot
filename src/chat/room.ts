@@ -11,10 +11,27 @@ export interface RoomOptions {
 }
 
 /**
+ * What an action needs of a room. A handler passes the update's room, whose `tx` records the
+ * update with the change; the alarm passes the plain one.
+ */
+export interface RoomAccess {
+	readonly chatId: number;
+	/** How many mentions go in one message. */
+	readonly mentionChunk: number;
+	readonly api: Api;
+	clock(): number;
+	random(): number;
+	/** Every change a redelivery must not repeat: read, decide and write in one transaction. */
+	tx<T>(fn: (sql: SqlStorage) => T): T;
+	/** For idempotent writes, which a redelivery may repeat harmlessly. */
+	write<T>(fn: (sql: SqlStorage) => T): T;
+}
+
+/**
  * The chat's storage and Telegram client, shared by every write path: updates and alarms.
  * It knows nothing about grammY's context, because an alarm has none.
  */
-export class Room {
+export class Room implements RoomAccess {
 	readonly chatId: number;
 	/** How many mentions go in one message. */
 	readonly mentionChunk: number;

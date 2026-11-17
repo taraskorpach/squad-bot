@@ -2,6 +2,7 @@ import { runInDurableObject } from 'cloudflare:test';
 import type { Middleware } from 'grammy';
 import { describe, expect, it } from 'vitest';
 import type { ChatRoom } from '../../src/chat/chat-room';
+import type { RoomAccess } from '../../src/chat/room';
 import type { BotContext } from '../../src/context';
 import { failureOf, freshRoom, noting, roomWith, rows } from '../helpers/rooms';
 import { telegram } from '../helpers/telegram';
@@ -199,6 +200,38 @@ describe("the room's memory", () => {
 		await second.handleUpdate(textMessage('три'));
 
 		expect(claims).toEqual([true, false, true]);
+	});
+});
+
+describe("the update's room as an action's room", () => {
+	/** An action, as the pools write them: against the room, never a grammY context. */
+	function noteChange(room: RoomAccess): number {
+		return room.tx((sql) => {
+			sql.exec('INSERT INTO notes (update_id, text) VALUES (0, ?)', 'from an action');
+			return room.chatId;
+		});
+	}
+
+	it("records the update with the action's change, so a redelivery can't repeat it", async () => {
+		const seen: unknown[] = [];
+		const stub = await roomWith([
+			(ctx) => {
+				const chatId = noteChange(ctx.room);
+				const recorded = ctx.room.write((sql) =>
+					sql
+						.exec(
+							'SELECT update_id FROM processed_updates WHERE update_id = ?',
+							ctx.update.update_id,
+						)
+						.toArray(),
+				);
+				seen.push(chatId, recorded.length, ctx.room.committed);
+			},
+		]);
+
+		await stub.handleUpdate(textMessage('привіт'));
+
+		expect(seen).toEqual([CHAT_ID, 1, true]);
 	});
 });
 

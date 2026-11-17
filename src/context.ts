@@ -1,5 +1,5 @@
-import type { Context } from 'grammy';
-import type { Room } from './chat/room';
+import type { Api, Context } from 'grammy';
+import type { Room, RoomAccess } from './chat/room';
 import type { Throttle } from './chat/throttle';
 import { recordProcessed } from './chat/update-log';
 
@@ -9,7 +9,7 @@ export type BotContext = Context & { room: UpdateRoom };
  * One update's view of the room. `commit` is for every non-idempotent change: the change and
  * the update's id commit together, so a redelivery can never apply it twice.
  */
-export class UpdateRoom {
+export class UpdateRoom implements RoomAccess {
 	readonly room: Room;
 	readonly updateId: number;
 	#committed = false;
@@ -30,6 +30,11 @@ export class UpdateRoom {
 		return decision;
 	}
 
+	/** As `commit`, so an action handed this room records the update with its change. */
+	tx<T>(fn: (sql: SqlStorage) => T): T {
+		return this.commit(fn);
+	}
+
 	/** For idempotent writes: they don't mark the update committed. */
 	write<T>(fn: (sql: SqlStorage) => T): T {
 		return this.room.write(fn);
@@ -37,6 +42,18 @@ export class UpdateRoom {
 
 	clock(): number {
 		return this.room.clock();
+	}
+
+	random(): number {
+		return this.room.random();
+	}
+
+	get chatId(): number {
+		return this.room.chatId;
+	}
+
+	get api(): Api {
+		return this.room.api;
 	}
 
 	get mentionChunk(): number {
