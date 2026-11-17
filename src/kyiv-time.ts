@@ -59,6 +59,16 @@ export function dayAndMonth(ms: number): string {
 	return `${twoDigits(day)}.${twoDigits(month)}`;
 }
 
+/** `16.11.2026` on the Kyiv calendar. */
+export function fullDate(ms: number): string {
+	return `${dayAndMonth(ms)}.${inKyiv(ms).year}`;
+}
+
+/** Whether two instants fall in one year of the Kyiv calendar. */
+export function sameYear(a: number, b: number): boolean {
+	return inKyiv(a).year === inKyiv(b).year;
+}
+
 function inKyiv(ms: number): Temporal.ZonedDateTime {
 	return Temporal.Instant.fromEpochMilliseconds(ms).toZonedDateTimeISO(KYIV);
 }

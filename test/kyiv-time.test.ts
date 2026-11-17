@@ -3,8 +3,10 @@ import {
 	clockTime,
 	dayAndMonth,
 	daysFrom,
+	fullDate,
 	nextMidnight,
 	occurrencesAround,
+	sameYear,
 	upcomingHours,
 } from '../src/kyiv-time';
 
@@ -89,5 +91,17 @@ describe('clockTime and dayAndMonth', () => {
 		expect(clockTime(utc(11, 16, 7, 5))).toBe('09:05');
 		expect(dayAndMonth(utc(11, 16, 22, 30))).toBe('17.11');
 		expect(dayAndMonth(utc(3, 1, 12))).toBe('01.03');
+	});
+});
+
+describe('fullDate and sameYear', () => {
+	// 31.12.2026 at 22:30 UTC is already 01.01.2027 in Kyiv.
+	const newYearInKyiv = Date.UTC(2026, 11, 31, 22, 30);
+
+	it('read the year on the Kyiv calendar', () => {
+		expect(fullDate(utc(11, 16, 19))).toBe('16.11.2026');
+		expect(fullDate(newYearInKyiv)).toBe('01.01.2027');
+		expect(sameYear(utc(1, 1, 12), utc(11, 16, 19))).toBe(true);
+		expect(sameYear(utc(11, 16, 19), newYearInKyiv)).toBe(false);
 	});
 });

@@ -143,6 +143,14 @@ export const texts = {
 			cardLink: (url: string): string => ` → <a href="${url}">картка</a>`,
 		},
 	},
+	/** A post sent to the chat that the chat has already seen. */
+	shares: {
+		bayan: (name: string, when: string, original: string): string =>
+			`🪗 Баян! Уже було — ${name}, ${when}${original}`,
+		original: (url: string): string => ` → <a href="${url}">оригінал</a>`,
+		today: (time: string): string => `сьогодні о ${time}`,
+		yesterday: (time: string): string => `вчора о ${time}`,
+	},
 	/** /stats: a board per joke, each person's count in all. */
 	stats: {
 		header: '📊 Статистика за весь час',
