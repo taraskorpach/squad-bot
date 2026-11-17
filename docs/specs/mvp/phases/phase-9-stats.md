@@ -10,7 +10,7 @@ pr: C
 **Outcome:** The group's running jokes get a scoreboard. Free. Low risk.
 
 **Files to touch:**
-- `src/kyiv-time.ts` (`monthWindow`, the month's name; created here if phase 6 hasn't yet)
+- `src/kyiv-time.ts` (`monthWindow`, the month's name; phase 6 created the module)
 - `src/stats/stats-queries.ts`, `src/stats/stats-format.ts`, `src/stats/stats-handlers.ts`
 - `src/texts.ts`, `src/bot.ts`
 - `test/stats/*.test.ts`
@@ -19,7 +19,8 @@ pr: C
 
 - **Windows are computed in code** with `Temporal` in `src/kyiv-time.ts`: SQLite's `localtime` is
   the host's UTC and it knows no zones (craft). Test month starts in winter (UTC+2) and summer
-  (UTC+3), and a month that starts the day after a DST change.
+  (UTC+3), and months whose boundary and `now` sit on opposite sides of a DST change: only those
+  catch a window built from the offset at `now` (preflight, finding 2).
 - **Queries** run over the append-only `events`, with and without the window (`technical.md` →
   *Stats*).
   - `all` and `domikpisik` count every event.
@@ -38,4 +39,8 @@ pr: C
 
 ## Phase-local notes
 
-- Until PR B is live there are no pool events, so the Граю, pools and Пас boards are empty; that is expected.
+- PR C is stacked on PR B, which merges first, so the Граю, pools and Пас boards fill from the
+  pools' events as soon as PR C is live.
+- Preflight defaults (`research/phase-9/2026-11-17-stats-preflight.md`): "this month" is read at
+  the room's clock; equal counts share a place (1, 1, 3); names are told apart among every member
+  the bot knows.
