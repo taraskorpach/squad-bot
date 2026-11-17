@@ -22,7 +22,7 @@ function refsOf(stub: RoomStub) {
 }
 
 describe('a message with posts', () => {
-	it('records each post for its sender, when it was sent and in which message, and says nothing', async () => {
+	it('records each post for its sender, when it was sent and in which message, and writes nothing', async () => {
 		const stub = await roomWith([trackShares]);
 		const message = linkMessage(
 			'глянь https://www.instagram.com/reel/DezXNvMGxHM/?vrfl=MXNoaW1lajB2ZXFtNw== і https://youtu.be/dQw4w9WgXcQ',
@@ -40,7 +40,7 @@ describe('a message with posts', () => {
 			{ ...sent, ref: 'instagram:DezXNvMGxHM' },
 			{ ...sent, ref: 'youtube:dQw4w9WgXcQ' },
 		]);
-		expect(telegram.calls()).toEqual([]);
+		expect(telegram.callsTo('sendMessage')).toEqual([]);
 	});
 
 	it('finds posts in a photo caption and behind a hidden link', async () => {
@@ -210,5 +210,77 @@ describe('a post the chat has seen', () => {
 			expect.stringMatching(/^🪗 Баян! Уже було — Олег, вчора о 21:40 → /),
 			expect.stringMatching(/^🪗 Баян! Уже було — Тарас, вчора о 21:40 → /),
 		]);
+	});
+
+	it('gets no 👀: the баян is its answer', async () => {
+		const { stub } = await roomWithFirstShare();
+
+		await stub.handleUpdate(
+			linkMessage('https://youtu.be/dQw4w9WgXcQ', { from: maks, date: seconds(NOW) }),
+		);
+
+		expect(telegram.callsTo('setMessageReaction')).toEqual([]);
+	});
+
+	it('beside a post new to the chat, gets the баян and the 👀 both', async () => {
+		const { stub } = await roomWithFirstShare();
+
+		await stub.handleUpdate(
+			linkMessage('https://youtu.be/dQw4w9WgXcQ https://vm.tiktok.com/ZMhvqJ8Fx/', {
+				from: maks,
+				date: seconds(NOW),
+			}),
+		);
+
+		expect(telegram.callsTo('setMessageReaction')).toHaveLength(1);
+		expect(telegram.callsTo('sendMessage')).toHaveLength(1);
+	});
+
+	it('gets neither the баян nor the 👀 when it reaches the bot over 10 minutes late, and still counts', async () => {
+		const { stub } = await roomWithFirstShare();
+
+		await stub.handleUpdate(
+			linkMessage('https://youtu.be/dQw4w9WgXcQ https://vm.tiktok.com/ZMhvqJ8Fx/', {
+				from: maks,
+				date: seconds(NOW - 11 * MINUTE),
+			}),
+		);
+
+		expect(telegram.calls()).toEqual([]);
+		expect(await shares(stub)).toHaveLength(3);
+	});
+
+	it('keeps its count when the 👀 and the баян both fail', async () => {
+		const { stub } = await roomWithFirstShare();
+		telegram.fail('setMessageReaction', { status: 400, description: 'REACTION_INVALID' });
+		telegram.fail('sendMessage', { status: 400 });
+
+		await stub.handleUpdate(
+			linkMessage('https://youtu.be/dQw4w9WgXcQ https://vm.tiktok.com/ZMhvqJ8Fx/', {
+				from: maks,
+				date: seconds(NOW),
+			}),
+		);
+
+		expect(await shares(stub)).toHaveLength(3);
+		expect(await rows(stub, 'SELECT update_id FROM failed_updates')).toEqual([]);
+	});
+});
+
+describe('a post new to the chat', () => {
+	it('gets 👀 on its message, and no reply', async () => {
+		const stub = await roomWith([trackShares]);
+		const message = linkMessage('https://youtu.be/dQw4w9WgXcQ', { from: oleg });
+
+		await stub.handleUpdate(message);
+
+		expect(telegram.callsTo('setMessageReaction')).toEqual([
+			{
+				chat_id: CHAT_ID,
+				message_id: message.message?.message_id,
+				reaction: [{ type: 'emoji', emoji: '👀' }],
+			},
+		]);
+		expect(telegram.callsTo('sendMessage')).toEqual([]);
 	});
 });

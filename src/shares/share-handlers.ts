@@ -14,6 +14,8 @@ interface Seen {
 	firstShares: StatEvent[];
 	/** Who is who, for naming those first senders. */
 	names: ReadonlyMap<number, string>;
+	/** Whether the message has a post the chat hadn't seen. */
+	anyNew: boolean;
 }
 
 /**
@@ -29,16 +31,28 @@ trackShares.on(['::url', '::text_link'], async (ctx, next) => {
 	const sender = ctx.from;
 	if (!sender || refs.length === 0) return;
 	const share = { userId: sender.id, messageId: ctx.msg.message_id, at: sentAt(ctx.msg) };
-	const seen = ctx.room.commit((sql): Seen => {
-		const firstShares = refs.flatMap((ref) => firstEventAbout(sql, 'share', ref) ?? []);
-		for (const ref of refs) recordEvent(sql, { kind: 'share', ref, ...share });
-		const names = firstShares.length > 0 ? displayNames(knownMembers(sql)) : new Map();
-		return { firstShares, names };
-	});
-	if (ctx.room.stale || seen.firstShares.length === 0) return;
+	const seen = ctx.room.commit((sql) => recordShares(sql, refs, share));
+	if (ctx.room.stale) return;
+	if (seen.anyNew) await attempt('shares: the 👀', () => ctx.react('👀'));
+	if (seen.firstShares.length === 0) return;
 	const text = bayanText(seen.firstShares, seen.names, ctx.room.chatId, share.at);
 	await attempt('shares: the баян', () => ctx.reply(text, replyingTo(ctx.msg.message_id)));
 });
+
+/**
+ * Records one share per post, and tells what the chat had seen of them: each post's first share
+ * is read before the inserts, so a message is never its own баян.
+ */
+function recordShares(
+	sql: SqlStorage,
+	refs: readonly string[],
+	share: Pick<StatEvent, 'userId' | 'messageId' | 'at'>,
+): Seen {
+	const firstShares = refs.flatMap((ref) => firstEventAbout(sql, 'share', ref) ?? []);
+	for (const ref of refs) recordEvent(sql, { kind: 'share', ref, ...share });
+	const names = firstShares.length > 0 ? displayNames(knownMembers(sql)) : new Map();
+	return { firstShares, names, anyNew: firstShares.length < refs.length };
+}
 
 /** A message's links: what its `url` entities show, and where its `text_link` entities lead. */
 function linksOf(ctx: BotContext): string[] {
