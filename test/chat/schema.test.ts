@@ -170,3 +170,41 @@ describe('migration 5', () => {
 		});
 	});
 });
+
+describe('migration 6', () => {
+	it('keeps every event, and lets one say what it is about and which message made it', async () => {
+		await runInDurableObject(freshRoom(), (_room, state) => {
+			const { sql } = state.storage;
+			// The object as migration 5 left it: events with no ref and no message id.
+			sql.exec('DELETE FROM _sql_schema_migrations WHERE id = 6');
+			sql.exec('DROP TABLE events');
+			sql.exec(`CREATE TABLE events (
+				id      INTEGER PRIMARY KEY AUTOINCREMENT,
+				kind    TEXT NOT NULL,
+				user_id INTEGER NOT NULL,
+				pool_id INTEGER,
+				at      INTEGER NOT NULL
+			)`);
+			sql.exec('CREATE INDEX idx_events_kind_at ON events (kind, at)');
+			sql.exec("INSERT INTO events (kind, user_id, pool_id, at) VALUES ('all', 1, NULL, 1000)");
+			sql.exec("INSERT INTO events (kind, user_id, pool_id, at) VALUES ('join', 2, 7, 1100)");
+
+			migrate(state.storage, MIGRATIONS, NOW);
+
+			expect(
+				sql
+					.exec('SELECT kind, user_id, pool_id, ref, message_id, at FROM events ORDER BY id')
+					.toArray(),
+			).toEqual([
+				{ kind: 'all', user_id: 1, pool_id: null, ref: null, message_id: null, at: 1000 },
+				{ kind: 'join', user_id: 2, pool_id: 7, ref: null, message_id: null, at: 1100 },
+			]);
+			sql.exec(
+				"INSERT INTO events (kind, user_id, ref, message_id, at) VALUES ('share', 3, 'youtube:dQw4w9WgXcQ', 42, 1200)",
+			);
+			expect(
+				sql.exec("SELECT user_id, ref, message_id FROM events WHERE kind = 'share'").toArray(),
+			).toEqual([{ user_id: 3, ref: 'youtube:dQw4w9WgXcQ', message_id: 42 }]);
+		});
+	});
+});
