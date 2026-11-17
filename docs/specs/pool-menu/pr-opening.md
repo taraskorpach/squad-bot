@@ -5,6 +5,7 @@
 2 code phases planned, one PR from `feat/pool-menu`: phase 1 makes pools without a limit
 possible, phase 2 adds the menu that opens them. Merging deploys the bot (main's `deploy`
 workflow).
+PR #6 merged 2026-11-17 as 9a3d0f8 (merge).
 
 ## Pre-PR checks
 
