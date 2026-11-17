@@ -32,3 +32,4 @@ Warm cache for forward-propagating learnings. One row per ledger entry with its
 - `decision-event-time-is-when-the-person-acted.md` — [phase 6, 9] — an event's at is its message's date for a command, the clock for a tap
 
 ## Workarounds
+- `workaround-phase-5-runs-on-feat-mvp.md` — [phase 5] — no branch held phases 1 and 4; feat/mvp takes in PR A

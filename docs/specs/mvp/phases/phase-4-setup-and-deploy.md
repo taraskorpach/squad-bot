@@ -70,7 +70,7 @@ pr: A
 - [x] `telegram:configure webhook <worker-url>`: first checks that the Worker at `<origin>/webhook` answers the secret, then sets the webhook with the secret, `ALLOWED_UPDATES` and pending updates dropped, then the group command menu, and fails when `getWebhookInfo` reports an error
 - [x] `telegram:configure welcome`: once a webhook is set and reports no error, posts `welcomeMessage` to `ALLOWED_CHAT_ID`, with the ⚠️ line when `getChatMember` says the bot isn't an admin
 - [x] `.github/workflows/deploy.yml`: on push to `main` and on manual dispatch, the checks, then `wrangler deploy` with the Cloudflare secrets
-- [ ] `README.md`: the go-live runbook (production values in `.prod.vars`, one `WEBHOOK_SECRET`, secrets before merging PR A, a supergroup id) and local development with the one bot, including pointing the webhook back at the Worker
+- [x] `README.md`: the go-live runbook (production values in `.prod.vars`, one `WEBHOOK_SECRET`, secrets before merging PR A, a supergroup id) and local development with the one bot, including pointing the webhook back at the Worker
 
 ## Phase-local notes
 
