@@ -9,10 +9,11 @@ the runbook: going live, deploys and local development.
 
 ## Settings
 
-The bot reads four secrets. The same four keys go in two gitignored files:
+The bot reads four secrets. One bot serves both the friends' chat and a test group, so the same
+four keys, with the same token, go in two gitignored files:
 
-- `.dev.vars` for the dev bot, which `wrangler dev` reads;
-- `.prod.vars` for the production bot, which the setup script and `wrangler secret bulk` read.
+- `.dev.vars` for the test group, which `wrangler dev` reads;
+- `.prod.vars` for the friends' chat, which the setup script and `wrangler secret bulk` read.
 
 Copy `.dev.vars.example` to start either one.
 
@@ -42,11 +43,12 @@ is missing on the Worker.
      so the account gets its `workers.dev` subdomain, and run `npx wrangler login`. Leave
      Workers Builds off (no Git connection in the dashboard): deploys come only from GitHub
      Actions, after the checks.
-   - Two bots in @BotFather, one for production and one for development.
+   - One bot in @BotFather, and a test group of at least two accounts where it is an admin
+     with only the right to pin messages.
    - The GitHub Actions secrets `CLOUDFLARE_API_TOKEN` (a token from the "Edit Cloudflare
      Workers" template) and `CLOUDFLARE_ACCOUNT_ID`.
-2. **Add the production bot to the chat** as an admin with only the right to pin messages.
-   Admins receive every message, so privacy mode can stay on.
+2. **Add the bot to the chat** as an admin with only the right to pin messages. Admins receive
+   every message, so privacy mode can stay on.
 3. **Find the chat's id.** Put `BOT_TOKEN` in `.prod.vars`, post any message in the chat, then
    run:
 
@@ -61,6 +63,8 @@ is missing on the Worker.
    - If the chat is still a basic group, turn on a setting only supergroups have, such as chat
      history visible to new members. Post a message, then run `discover` again.
    - Pending updates last 24 hours. `discover` works only until step 6 sets the webhook.
+   - The test group shows up too if it had a message in the last day. Its id is the one
+     `.dev.vars` needs, so note it now.
 4. **Set the secrets.** Fill in all four keys in `.prod.vars`, then send them to the Worker:
 
    ```sh
@@ -99,30 +103,39 @@ menu stay set across deploys. Run `webhook` again only when the Worker's URL cha
 
 ## Local development
 
-Use the dev bot in a test group with at least two accounts, so you can try taps from two
-people. A bot has one webhook, so the dev bot never touches the production chat.
+The same bot runs locally in the test group, where you can try taps from two people. A bot has
+one webhook, though. Once the bot is live, pointing it at your machine takes it away from the
+friends' chat: the chat gets no answers, and what it sends meanwhile is lost. So keep sessions
+short, and always finish with step 5.
 
-1. Copy `.dev.vars.example` to `.dev.vars`, and put in the dev bot's token and a secret.
-2. Add the dev bot to the test group as an admin with only the pin right, and post a message.
-   Then run `npm run telegram:configure -- discover`, and put the `BOT_INFO` and the supergroup's
-   id it prints into `.dev.vars`.
-3. Start the Worker with a public URL:
+1. Copy `.dev.vars.example` to `.dev.vars`. Put in the bot's token and its `BOT_INFO` (the same
+   as in `.prod.vars`), a `WEBHOOK_SECRET`, and the test group's supergroup id as
+   `ALLOWED_CHAT_ID`.
+   - Before go-live, `discover` finds the id: post a message in the test group, then run
+     `npm run telegram:configure -- discover`.
+   - Once a webhook is set, `discover` refuses to run. The live Worker logs the id instead: run
+     `npx wrangler tail`, post in the test group, and look for `Ignored update … from chat -100…`.
+2. Start the Worker with a public URL:
 
    ```sh
    npx wrangler dev --tunnel
    ```
 
    It prints a `https://….trycloudflare.com` address, which changes on every start.
-4. Point the dev bot at the new address each time you start, from another terminal:
+3. Point the bot at the new address each time you start, from another terminal:
 
    ```sh
    npm run telegram:configure -- webhook https://….trycloudflare.com
    ```
 
    The first time, also run `npm run telegram:configure -- welcome`.
+4. Restart `wrangler dev` before trying anything an alarm runs, such as a pool's timers. After a
+   hot reload it can stop running alarms until it starts again.
+5. When you stop, point the bot back at the Worker:
 
-Restart `wrangler dev` before trying anything an alarm runs, such as a pool's timers. After a
-hot reload it can stop running alarms until it starts again.
+   ```sh
+   npm run telegram:configure -- --env .prod.vars webhook https://squad-bot.<subdomain>.workers.dev
+   ```
 
 Before a commit, run:
 

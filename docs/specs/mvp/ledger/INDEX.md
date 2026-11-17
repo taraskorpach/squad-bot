@@ -29,8 +29,10 @@ Warm cache for forward-propagating learnings. One row per ledger entry with its
 - `decision-failure-policy.md` — [general, load-bearing] — 500 only before any commit or send, at most 3 times over 5 min
 - `decision-timers-from-pools.md` — [phase 6, 7, 8] — the alarm reads open pools; no jobs table; failed actions retry 3×
 - `decision-events-append-only.md` — [phase 3, 6, 9] — no unique index or kind CHECK; once-per-pool counting in queries
+- `decision-one-bot.md` — [phase 2+] — one bot for chat and tests; a local tunnel takes it out of the chat
 - `decision-tag-window.md` — [phase 3, 7] — /all and 🔔 tag at most once per 30 s; every /all counts (Taras)
 - `decision-event-time-is-when-the-person-acted.md` — [phase 6, 9] — an event's at is its message's date for a command, the clock for a tap
 - `decision-announcements-in-one-message.md` — [phase 5, 7, 8] — squad, draw and close messages aren't chunked; only tag messages are
 
 ## Workarounds
+- `workaround-phase-5-runs-on-feat-mvp.md` — [phase 5] — no branch held phases 1 and 4; feat/mvp takes in PR A

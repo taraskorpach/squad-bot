@@ -407,14 +407,14 @@ The side effects shared by callbacks, `/join` and timers. They are written again
   - It is regenerated whenever `wrangler.jsonc` changes.
   - `wrangler types --check` runs in CI.
   - Biome ignores it.
-- Local development: `.dev.vars` holds the dev bot's values, and `.dev.vars.example` is committed. The setup script reads production values from `.prod.vars`, which is gitignored and has the same keys.
+- Local development: `.dev.vars` holds the same bot's token with the test group's `ALLOWED_CHAT_ID`, and `.dev.vars.example` is committed. The setup script reads production values from `.prod.vars`, which is gitignored and has the same keys.
 
 ## Setup script (phase 4)
 
 - `scripts/configure-telegram.ts` is the Node 26 shell: `node scripts/configure-telegram.ts --env .prod.vars <subcommand>`, with `--env` defaulting to `.dev.vars`.
   - It parses arguments, calls Telegram through grammY's `Api`, and prints.
   - Tests never import it.
-  - Every subcommand first prints the target bot's `@username` (from `getMe`), so the dev and production bots can't be confused.
+  - Every subcommand first prints the target bot's `@username` (from `getMe`), so it's clear which bot and env file a run targets.
 - Its pure parts live in `scripts/telegram-setup.ts`:
   - finding groups in `getUpdates` results;
   - building the `setWebhook` and `setMyCommands` payloads. The command menu's descriptions are copy, in `texts.commandMenu`;
@@ -439,7 +439,7 @@ Go-live order (phase 5):
 5. `webhook`.
 6. `welcome`.
 
-Local development: a dev bot in a test group, `wrangler dev --tunnel`, then `webhook <tunnel-url>` with `.dev.vars`. A Quick Tunnel's host changes every session, so `webhook` runs again each time.
+Local development: the one bot (no dev bot, Taras's call on 2026-11-16) in a test group, `wrangler dev --tunnel`, then `webhook <tunnel-url>` with `.dev.vars`. A Quick Tunnel's host changes every session, so `webhook` runs again each time. A bot has one webhook: after go-live, a local session takes the bot away from the friends' chat until `webhook <worker-url> --env .prod.vars` points it back; commands the chat sends meanwhile reach the local Worker, whose `ALLOWED_CHAT_ID` is the test group, and are lost.
 
 ## CI/CD
 
