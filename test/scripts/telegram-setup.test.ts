@@ -32,6 +32,7 @@ describe('COMMAND_MENU', () => {
 				{ command: 'join', description: 'Приєднатися до пулу' },
 				{ command: 'pools', description: 'Відкриті пули' },
 				{ command: 'stats', description: 'Статистика' },
+				{ command: 'artemisalwaysright', description: 'Нагадати, що Артем завжди правий' },
 			],
 			scope: { type: 'all_group_chats' },
 		});
