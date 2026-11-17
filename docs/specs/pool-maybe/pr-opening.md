@@ -9,7 +9,7 @@ the deploy runs migration 5 on the live object.
 
 Scoped to the one Worker. Tick each before opening the PR, never straight to `main`.
 
-- [ ] `npm run check` passes
-- [ ] `npm test` passes inside workerd, migration 5 on old data included
-- [ ] `npx wrangler deploy --dry-run` bundles without errors
-- [ ] Bot texts match `design.md`, word for word
+- [x] `npm run check` passes
+- [x] `npm test` passes inside workerd, migration 5 on old data included (488)
+- [x] `npx wrangler deploy --dry-run` bundles without errors (68 KiB gzipped)
+- [x] Bot texts match `design.md`, word for word

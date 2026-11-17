@@ -12,4 +12,4 @@
 
 ## Phases
 
-- [ ] Phase 1 — The 🤷 ± answer → `phases/phase-1-maybe-answer.md`
+- [x] Phase 1 — The 🤷 ± answer → `phases/phase-1-maybe-answer.md`

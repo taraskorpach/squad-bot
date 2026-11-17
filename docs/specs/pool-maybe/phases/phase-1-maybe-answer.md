@@ -25,10 +25,10 @@ needs: []
 
 ## Deliverables
 
-- [ ] Migration 5: `answers` without the CHECK on `choice`, every existing answer carried over
-- [ ] Rules: a maybe holds no seat, keeps its rank, frees a seat for the bench's first; outcomes `maybe` and `already-maybe`
-- [ ] The card: `[ ✅ Граю ] [ 🤷 ± ] [ ❌ Пас ]` and `🤷 Може: …`; the toasts; a 🤷 tap answers through the object, with no event recorded
-- [ ] The start ping: the maybes in a line of their own, `🤷 …, ви з нами?`
+- [x] Migration 5: `answers` without the CHECK on `choice`, every existing answer carried over
+- [x] Rules: a maybe holds no seat, keeps its rank, frees a seat for the bench's first; outcomes `maybe` and `already-maybe`
+- [x] The card: `[ ✅ Граю ] [ 🤷 ± ] [ ❌ Пас ]` and `🤷 Може: …`; the toasts; a 🤷 tap answers through the object, with no event recorded
+- [x] The start ping: the maybes in a line of their own, `🤷 …, ви з нами?`
 
 ## Phase-local notes
 

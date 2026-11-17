@@ -12,6 +12,9 @@ needs to know exist to navigate the code — not every file that's touched.
 
 | File | Why we care | Ledger |
 |------|-------------|--------|
+| `src/chat/schema.ts` | Migration 5 rebuilt `answers` without its CHECK; the answer kinds are `Choice` in code | |
+| `src/pools/pool-rules.ts` | `Choice` has `maybe`; `Lineup.maybe`; a maybe frees a seat like a pass | |
+| `src/pools/pool-messages.ts` | `startPingText` asks the maybes in a second line | |
 
 ## External references
 
