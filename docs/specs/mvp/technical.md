@@ -289,8 +289,12 @@ None of these imports grammY or touches storage; time and randomness come in as 
   - `all` and `domikpisik` count every event.
   - `join`, `pass` and `pool_open` count once per pool and person, placed by that pair's first event (`MIN(at)`), so toggling can't inflate a board.
   - Total joins: distinct (pool, person) pairs of `join`.
-- Names come from `members`, including people who left.
-- Sort by month count, then all-time count, then name. Leave out rows that are zero in both.
+- Names come from `members`, including people who left. `displayNames` tells them apart among
+  every member the bot knows (`knownMembers`), so a namesake who left still adds the initial.
+- "This month" is the Kyiv month at the room's clock, as `/pools` labels by it. A stale `/stats`
+  is ignored, so the clock and the message's date differ by at most 10 minutes.
+- Sort by month count, then all-time count, then name. Equal counts share a place (1, 1, 3).
+  Leave out rows that are zero in both.
 
 ### Timer planner (`src/pools/pool-timers.ts`, phase 8)
 - `nextDue(pools, now)` (pure): the earliest of these, over the open pools:

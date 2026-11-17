@@ -21,6 +21,7 @@ Warm cache for forward-propagating learnings. One row per ledger entry with its
 
 ## Principles
 - `principle-actions-commit-through-update-room.md` — [phase 6, 7, 8] — pool actions from a handler commit via ctx.room, or the update isn't recorded
+- `docs/specs/_ledger/principle-test-zone-windows-across-the-change.md` — [general] — test a Kyiv window with now and the boundary across a DST change
 
 ## Domain
 

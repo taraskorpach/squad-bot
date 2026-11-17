@@ -17,11 +17,13 @@ needs to know exist to navigate the code — not every file that's touched.
 | `src/chat/schema.ts` | Ordered migrations, append only: 1 the update log, 2 `members` and `events`, 3 `pools`, `answers` and `pool_messages` | phases 2, 3, 6 |
 | `src/telegram.ts` | Import-free Telegram shapes shared with the setup script: `chatOf` (any update type), `isGroup`, `isInChat`, `isAdmin`, `personSending`, `sentAt`, `MESSAGE_FORMAT`, `HI_CALLBACK`, `WEBHOOK_SECRET_HEADER` | phases 2, 3, 4 |
 | `src/members/roster.ts` | Pure: `presencesOf(update)` (who an update shows in or out), `tagTargets`; the `Member` type | phase 3 |
-| `src/members/member-store.ts`, `src/members/member-handlers.ts` | `members` upsert and read; `learningMembers`, the idempotent write every update runs before the gate | phase 3 |
+| `src/members/member-store.ts`, `src/members/member-handlers.ts` | `members` upsert and read: in the chat, by id, every known one (`knownMembers`, the stats' names); `learningMembers`, the idempotent write every update runs before the gate | phases 3, 9 |
 | `src/members/mentions.ts` | Pure: `escapeHtml`, `displayNames` (shared first names told apart), `mention`, `mentionsOf` (Ukrainian order), `chunk` | phase 3 |
 | `src/members/all-handlers.ts` | `/all` | phase 3 |
 | `src/stats/event-store.ts` | `EventKind` and `recordEvent`, the one writer of the append-only record; pool events carry their `pool_id` | phases 3, 6 |
-| `src/kyiv-time.ts` | The one place Kyiv is named: a wall time's occurrences around a moment (DST-safe), calendar days between two instants, `21:00` and `16.11` | phase 6 |
+| `src/stats/stats-queries.ts` | The boards' reads of the record: `COUNTED` (every event, or each pool and person's first, by kind), `tallies`, `totalJoins`; `readStats`, everything `/stats` shows | phase 9 |
+| `src/stats/stats-format.ts`, `src/stats/stats-handlers.ts` | Pure `statsText`: the five boards, sorted, places shared on equal counts, empty boards; `/stats` (`showStats`), read-only like `/pools` | phase 9 |
+| `src/kyiv-time.ts` | The one place Kyiv is named: a wall time's occurrences around a moment (DST-safe), calendar days between two instants, `21:00` and `16.11`; `monthWindow` (the Kyiv month as `[start, end)` in UTC) and `monthName` | phases 6, 9 |
 | `src/pools/pool-args.ts`, `src/pools/pool-rules.ts` | Pure: `/pool`'s arguments and `startOf`; `lineupOf`, `answer` (row, outcome, move-ups, squad completed), `closingTime`, `joinTarget`, `draw`, `drawRefusal` | phases 6, 7 |
 | `src/pools/pool-format.ts`, `src/pools/pool-keyboards.ts`, `src/pools/pool-messages.ts` | Pure: the card (deterministic, with the draw's note); the buttons as the lineup allows them and the `p:{pool}:{action}` codec; replies, the opening and 🔔 messages, toasts, the squad's, move-up, draw and close messages, the `/pools` list | phases 6, 7 |
 | `src/pools/pool-store.ts`, `src/pools/answer-store.ts`, `src/pools/timer-store.ts` | The pools' SQL and the `Pool` record (`adoptCard`, `closeOpenPool`, `openPools`); the answers' (`saveDraw`); the timers' bookkeeping (`TIMER_BACKOFF_MS`, `recordTimerFailure`) | phases 6, 7, 8 |

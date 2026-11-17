@@ -227,6 +227,7 @@ A repeat within 30 s of the last tagging gets a 👌 reaction instead.
 1. Макс — 2 / 30
 ```
 - Each row is `{place}. {name} — {this month} / {all time}`, sorted by this month, then all time, then name.
+  Equal counts share a place, and the places they fill are skipped: `1.`, `1.`, `3.` (phase 9).
 - People with zero in both are left out. An empty board reads `— поки порожньо`.
 - The month name is the nominative Ukrainian month in Kyiv time.
 
