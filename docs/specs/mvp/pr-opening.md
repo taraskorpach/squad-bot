@@ -24,6 +24,7 @@ PR #3 · feat/mvp-pr-c (base feat/mvp-pr-b)
 `spec.ts pr open` always targets `main`, so a stacked PR is opened by hand with
 `gh pr create --base <the branch below>`; babysit's `pr open` then finds it. Taras chose to
 babysit #3: merged on green, it adds the stats to `feat/mvp-pr-b`, and #2 carries both to `main`.
+PR #1 merged 2026-11-17 as 046a46d (merge).
 
 ## Pre-PR checks
 
