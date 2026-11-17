@@ -51,6 +51,8 @@ export async function openPool(room: RoomAccess, request: PoolRequest): Promise<
 		recordEvent(sql, { kind: 'join', userId: authorId, poolId: id, at: openedAt });
 		return id;
 	});
+	// The card is still to be posted, so the alarm is due at once: if the send dies, it posts it.
+	room.arm();
 	await postCard(room, poolId, request.commandId);
 }
 
@@ -131,7 +133,9 @@ export async function showDraw(
 
 /** Closes a pool that is still open; false when it already was. */
 export function commitClose(room: RoomAccess, poolId: number, by: 'auto' | 'author'): boolean {
-	return room.tx((sql) => closeOpenPool(sql, poolId, by));
+	const closed = room.tx((sql) => closeOpenPool(sql, poolId, by));
+	if (closed) room.arm();
+	return closed;
 }
 
 /** The close, shown: the card turns final; the author's close tags the others who said Граю. */

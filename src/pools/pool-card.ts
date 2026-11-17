@@ -51,16 +51,21 @@ export function mentionsIn(state: CardState, ids: readonly number[]): string[] {
 /**
  * Posts the card, then the opening tag messages under it, and records them all as the pool's.
  * A card that doesn't go out leaves the pool without one: edits skip it, and the alarm posts it.
+ * True once the card went out.
  */
-export async function postCard(room: RoomAccess, poolId: number, replyTo?: number): Promise<void> {
+export async function postCard(
+	room: RoomAccess,
+	poolId: number,
+	replyTo?: number,
+): Promise<boolean> {
 	const state = room.read((sql) => cardState(sql, poolId));
-	if (!state) return;
+	if (!state) return true;
 	const card = renderCard(state.pool, state.lineup, state.names, room.clock());
 	const format = replyTo === undefined ? MESSAGE_FORMAT : replyingTo(replyTo);
 	const sent = await attempt('pools: the card', () =>
 		room.api.sendMessage(room.chatId, card.text, { ...format, reply_markup: card.keyboard }),
 	);
-	if (!sent) return;
+	if (!sent) return false;
 	room.write((sql) => saveCard(sql, poolId, sent.message_id, JSON.stringify(card)));
 	const { pool, names, inChat } = state;
 	const others = inChat.filter((member) => member.id !== pool.authorId).map(({ id }) => id);
@@ -72,6 +77,7 @@ export async function postCard(room: RoomAccess, poolId: number, replyTo?: numbe
 		room.mentionChunk,
 	);
 	for (const text of opening) await postUnderCard(room, poolId, sent.message_id, text);
+	return true;
 }
 
 /**
@@ -95,12 +101,13 @@ export async function postUnderCard(
 	poolId: number,
 	cardId: number | undefined,
 	text: string,
-): Promise<void> {
+): Promise<boolean> {
 	const format = cardId === undefined ? MESSAGE_FORMAT : replyingTo(cardId);
 	const sent = await attempt('pools: a message under the card', () =>
 		room.api.sendMessage(room.chatId, text, format),
 	);
 	if (sent) room.write((sql) => savePoolMessage(sql, poolId, sent.message_id));
+	return sent !== undefined;
 }
 
 async function editCard(room: RoomAccess, messageId: number, card: Card): Promise<true> {

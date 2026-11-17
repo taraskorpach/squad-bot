@@ -44,6 +44,10 @@ export class UpdateRoom implements RoomAccess {
 		return this.room.read(fn);
 	}
 
+	arm(): void {
+		this.room.arm();
+	}
+
 	clock(): number {
 		return this.room.clock();
 	}

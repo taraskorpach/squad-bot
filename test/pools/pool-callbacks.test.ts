@@ -8,8 +8,9 @@ import { type RoomSeams, type RoomStub, roomWith, rows } from '../helpers/rooms'
 import { telegram } from '../helpers/telegram';
 import { CHAT_ID, command, tap, textMessage, users } from '../helpers/updates';
 
-// 16.11 at 18:00 in Kyiv, two hours ahead of UTC in winter.
-const OPENED_AT = Date.UTC(2026, 10, 16, 16);
+// 16.11 at 18:00 in Kyiv, two hours ahead of UTC in winter. In the future: workerd runs an alarm
+// set in the past at once, which would fire pools' timers in the middle of these tests.
+const OPENED_AT = Date.UTC(2030, 10, 16, 16);
 const TAPPED_AT = OPENED_AT + 60 * 1000;
 const { taras, oleg, andriy, ihor } = users;
 
