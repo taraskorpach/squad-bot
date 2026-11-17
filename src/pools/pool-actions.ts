@@ -75,7 +75,10 @@ export function applyAnswer(
 		const decision = answer(pool, answersOf(sql, poolId), userId, choice, at);
 		if (decision.write) {
 			saveAnswer(sql, poolId, decision.write);
-			recordEvent(sql, { kind: choice === 'play' ? 'join' : 'pass', userId, poolId, at });
+			// A maybe has no board, so only Граю and Пас go on the record.
+			if (choice !== 'maybe') {
+				recordEvent(sql, { kind: choice === 'play' ? 'join' : 'pass', userId, poolId, at });
+			}
 		}
 		if (decision.squadCompleted) markSquadAnnounced(sql, poolId);
 		return { kind: 'answered', decision };

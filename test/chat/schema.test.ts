@@ -131,3 +131,42 @@ describe('the object at construction', () => {
 		});
 	});
 });
+
+describe('migration 5', () => {
+	it('carries every answer over, and lets a maybe in after', async () => {
+		await runInDurableObject(freshRoom(), (_room, state) => {
+			const { sql } = state.storage;
+			// The object as migration 4 left it: answers whose CHECK allows two kinds.
+			sql.exec('DELETE FROM _sql_schema_migrations WHERE id = 5');
+			sql.exec('DROP TABLE answers');
+			sql.exec(`CREATE TABLE answers (
+				pool_id     INTEGER NOT NULL REFERENCES pools (id),
+				user_id     INTEGER NOT NULL,
+				choice      TEXT NOT NULL CHECK (choice IN ('play', 'pass')),
+				rank        INTEGER NOT NULL,
+				answered_at INTEGER NOT NULL,
+				PRIMARY KEY (pool_id, user_id)
+			)`);
+			sql.exec(
+				"INSERT INTO pools (game, size, author_id, opened_at, closes_at) VALUES ('CS2', 5, 1, 1000, 2000)",
+			);
+			sql.exec("INSERT INTO answers VALUES (1, 1, 'play', 1, 1000)");
+			sql.exec("INSERT INTO answers VALUES (1, 2, 'pass', 0, 1100)");
+
+			migrate(state.storage, MIGRATIONS, NOW);
+
+			expect(
+				sql
+					.exec('SELECT pool_id, user_id, choice, rank, answered_at FROM answers ORDER BY user_id')
+					.toArray(),
+			).toEqual([
+				{ pool_id: 1, user_id: 1, choice: 'play', rank: 1, answered_at: 1000 },
+				{ pool_id: 1, user_id: 2, choice: 'pass', rank: 0, answered_at: 1100 },
+			]);
+			sql.exec("INSERT INTO answers VALUES (1, 3, 'maybe', 0, 1200)");
+			expect(sql.exec("SELECT user_id FROM answers WHERE choice = 'maybe'").toArray()).toEqual([
+				{ user_id: 3 },
+			]);
+		});
+	});
+});

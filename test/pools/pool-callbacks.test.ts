@@ -333,3 +333,24 @@ describe('✖️', () => {
 		expect(telegram.callsTo('sendMessage')).toEqual([]);
 	});
 });
+
+describe('🤷 ±', () => {
+	it('lists a maybe on the card, answers the tap, and counts nothing', async () => {
+		const card = await poolOf(5);
+
+		await card.stub.handleUpdate(tapOn(card, 'maybe', oleg));
+
+		expect(toasts()).toEqual(['Може 🤷']);
+		const [edit] = telegram.callsTo('editMessageText');
+		expect(String(edit?.text).split('\n').slice(3, 5)).toEqual([
+			'✅ Грають (1/5): Тарас',
+			'🤷 Може: Олег',
+		]);
+		expect(await answersIn(card.stub)).toContainEqual({
+			user_id: oleg.id,
+			choice: 'maybe',
+			rank: 0,
+		});
+		expect(await rows(card.stub, `SELECT kind FROM events WHERE user_id = ${oleg.id}`)).toEqual([]);
+	});
+});

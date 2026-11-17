@@ -4,7 +4,7 @@ import type { Lineup } from './pool-rules';
 import type { Pool } from './pool-store';
 
 /** What a pool's buttons do. */
-const ACTIONS = ['in', 'out', 'ping', 'draw', 'close'] as const;
+const ACTIONS = ['in', 'maybe', 'out', 'ping', 'draw', 'close'] as const;
 export type PoolAction = (typeof ACTIONS)[number];
 
 // `p:{pool}:{action}`, far under Telegram's 64 bytes. The welcome's 👋 is `hi`.
@@ -44,6 +44,7 @@ export function poolKeyboard(
 		inline_keyboard: [
 			[
 				{ ...button(card.playButton, 'in'), style: 'success' },
+				button(card.maybeButton, 'maybe'),
 				{ ...button(card.passButton, 'out'), style: 'danger' },
 			],
 			extras,
