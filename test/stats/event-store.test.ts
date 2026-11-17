@@ -22,6 +22,28 @@ describe('recordEvent', () => {
 		});
 	});
 
+	it("keeps a share's post and message, for the board's once-per-post count and the баян's link", async () => {
+		await runInDurableObject(freshRoom(), (_room, state) => {
+			const { sql } = state.storage;
+
+			recordEvent(sql, {
+				kind: 'share',
+				userId: 1001,
+				ref: 'youtube:dQw4w9WgXcQ',
+				messageId: 42,
+				at: 1_000,
+			});
+			recordEvent(sql, { kind: 'all', userId: 1001, at: 2_000 });
+
+			expect(
+				sql.exec('SELECT kind, user_id, ref, message_id, at FROM events ORDER BY id').toArray(),
+			).toEqual([
+				{ kind: 'share', user_id: 1001, ref: 'youtube:dQw4w9WgXcQ', message_id: 42, at: 1_000 },
+				{ kind: 'all', user_id: 1001, ref: null, message_id: null, at: 2_000 },
+			]);
+		});
+	});
+
 	it("keeps a pool's events with their pool, so the stats can count each pool once", async () => {
 		await runInDurableObject(freshRoom(), (_room, state) => {
 			const { sql } = state.storage;

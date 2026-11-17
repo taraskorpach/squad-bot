@@ -12,7 +12,14 @@ const NAMES = new Map([
 	[7, 'Саша'],
 ]);
 
-const NOBODY: Stats['tallies'] = { all: [], domikpisik: [], join: [], pool_open: [], pass: [] };
+const NOBODY: Stats['tallies'] = {
+	all: [],
+	domikpisik: [],
+	share: [],
+	join: [],
+	pool_open: [],
+	pass: [],
+};
 
 function stats(
 	tallies: Partial<Stats['tallies']>,
@@ -38,6 +45,7 @@ describe('statsText', () => {
 			{
 				all: [tally(1, 31), tally(2, 17)],
 				domikpisik: [tally(3, 120)],
+				share: [tally(1, 9), tally(5, 54), tally(2, 23)],
 				join: [tally(4, 40)],
 				pool_open: [tally(1, 25)],
 				pass: [tally(5, 30)],
@@ -55,6 +63,11 @@ describe('statsText', () => {
 				'',
 				'🏠 /domikpisik',
 				'1. Андрій — 120',
+				'',
+				'🍿 Скидає контент',
+				'1. Макс — 54',
+				'2. Олег — 23',
+				'3. Тарас — 9',
 				'',
 				'✅ Граю · разом 143',
 				'1. Ігор — 40',
@@ -99,6 +112,9 @@ describe('statsText', () => {
 				'— поки порожньо',
 				'',
 				'🏠 /domikpisik',
+				'— поки порожньо',
+				'',
+				'🍿 Скидає контент',
 				'— поки порожньо',
 				'',
 				'✅ Граю · разом 0',

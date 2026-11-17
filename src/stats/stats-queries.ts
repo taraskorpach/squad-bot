@@ -25,10 +25,14 @@ const EVERY_EVENT = 'SELECT user_id FROM events WHERE kind = ?';
 /** A person's answers in one pool count once, so toggling can't inflate a board. */
 const ONCE_IN_EACH_POOL = 'SELECT user_id FROM events WHERE kind = ? GROUP BY pool_id, user_id';
 
+/** A post counts once for each person who shared it, so sharing it again can't inflate a board. */
+const ONCE_FOR_EACH_POST = 'SELECT user_id FROM events WHERE kind = ? GROUP BY ref, user_id';
+
 /** The events each kind's board counts. */
 const COUNTED: Record<EventKind, string> = {
 	all: EVERY_EVENT,
 	domikpisik: EVERY_EVENT,
+	share: ONCE_FOR_EACH_POST,
 	pool_open: ONCE_IN_EACH_POOL,
 	join: ONCE_IN_EACH_POOL,
 	pass: ONCE_IN_EACH_POOL,
@@ -43,6 +47,7 @@ export function readStats(sql: SqlStorage): Stats {
 		tallies: {
 			all: tallies(sql, 'all'),
 			domikpisik: tallies(sql, 'domikpisik'),
+			share: tallies(sql, 'share'),
 			pool_open: tallies(sql, 'pool_open'),
 			join: tallies(sql, 'join'),
 			pass: tallies(sql, 'pass'),

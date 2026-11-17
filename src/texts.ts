@@ -148,6 +148,7 @@ export const texts = {
 		header: '📊 Статистика за весь час',
 		all: '📢 /all',
 		domikpisik: '🏠 /domikpisik',
+		shares: '🍿 Скидає контент',
 		joins: (total: number): string => `✅ Граю · разом ${total}`,
 		poolsOpened: '🎮 Відкриває пули',
 		passes: '❌ Пас',
