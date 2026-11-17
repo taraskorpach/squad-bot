@@ -3,7 +3,16 @@ import { clockTime, dayAndMonth, daysFrom } from '../kyiv-time';
 import { chunk, escapeHtml } from '../members/mentions';
 import { texts } from '../texts';
 import type { PoolArgsError } from './pool-args';
-import type { Placement } from './pool-rules';
+import { startLabel } from './pool-format';
+import type { DrawRefusal, Placement } from './pool-rules';
+import type { Pool } from './pool-store';
+
+/** A pool as `/pools` lists it: how many play and how many wait on the bench. */
+export interface ListedPool {
+	pool: Pool;
+	players: number;
+	bench: number;
+}
 
 /** The toast that answers a ✅ or ❌ tap. */
 export function toastOf(placement: Placement): string {
@@ -73,8 +82,82 @@ export function openingMessages(
 	mentions: readonly string[],
 	chunkSize: number,
 ): string[] {
-	const [first = [], ...rest] = chunk(mentions, chunkSize);
 	const opening = texts.pool.messages.opening(escapeHtml(author), escapeHtml(game), when);
-	const tagged = first.length > 0 ? `${opening} ${first.join(', ')}` : opening;
-	return [tagged, ...rest.map(texts.tags)];
+	return inChunks(
+		mentions,
+		chunkSize,
+		(first) => (first.length > 0 ? `${opening} ${first.join(', ')}` : opening),
+		texts.tags,
+	);
+}
+
+/** 🔔: who hasn't answered, with the first chunk of mentions, then the rest in chunks. */
+export function pingMessages(mentions: readonly string[], chunkSize: number): string[] {
+	const { messages } = texts.pool;
+	return inChunks(
+		mentions,
+		chunkSize,
+		(first) => messages.ping(first.join(', ')),
+		(more) => messages.pingMore(more.join(', ')),
+	);
+}
+
+/** After 🎲: the whole squad and the whole bench, so the message is never empty. */
+export function drawText(squad: readonly string[], bench: readonly string[]): string {
+	return texts.pool.messages.drawn(squad.join(', '), bench.join(', '));
+}
+
+/** The author's ✖️, for everyone else who said Граю: the pool named by its start, if it had one. */
+export function closedByAuthorText(
+	game: string,
+	startsAt: number | undefined,
+	mentions: readonly string[],
+): string {
+	const { messages } = texts.pool;
+	const joined = mentions.join(', ');
+	if (startsAt === undefined) return messages.closedByAuthor(escapeHtml(game), joined);
+	return messages.closedByAuthorAt(escapeHtml(game), clockTime(startsAt), joined);
+}
+
+export function drawRefusalToast(refusal: DrawRefusal): string {
+	const { toasts } = texts.pool;
+	switch (refusal) {
+		case 'used':
+			return toasts.drawUsed;
+		case 'not-playing':
+			return toasts.drawNotPlaying;
+		case 'bench-empty':
+			return toasts.benchEmpty;
+	}
+}
+
+/** `/pools`: each open pool with its start, its fill, its bench and a link to its card. */
+export function openPoolsText(listed: readonly ListedPool[], chatId: number, now: number): string {
+	const { replies } = texts.pool;
+	if (listed.length === 0) return replies.noOpenPool;
+	return [replies.openPools, ...listed.map((entry) => listedLine(entry, chatId, now))].join('\n');
+}
+
+/** A link to a supergroup's message: t.me/c takes the chat id without its -100. */
+export function cardLink(chatId: number, messageId: number): string {
+	return `https://t.me/c/${String(chatId).replace(/^-100/, '')}/${messageId}`;
+}
+
+function listedLine({ pool, players, bench }: ListedPool, chatId: number, now: number): string {
+	const { replies } = texts.pool;
+	const fill = replies.fill(players, pool.size) + (bench > 0 ? replies.onBench(bench) : '');
+	const link =
+		pool.messageId === undefined ? '' : replies.cardLink(cardLink(chatId, pool.messageId));
+	return replies.openPool(escapeHtml(pool.game), startLabel(pool.startsAt, now), fill) + link;
+}
+
+/** Mentions in chunks: the first chunk in its own wording, each further chunk in another. */
+function inChunks(
+	mentions: readonly string[],
+	size: number,
+	first: (chunk: readonly string[]) => string,
+	more: (chunk: readonly string[]) => string,
+): string[] {
+	const [head = [], ...rest] = chunk(mentions, size);
+	return [first(head), ...rest.map(more)];
 }

@@ -43,8 +43,12 @@ export const texts = {
 			passed: (names: string): string => `❌ Пас: ${names}`,
 			unanswered: (names: string): string => `⏳ Ще не відповіли: ${names}`,
 			nobody: '—',
+			drawn: '🎲 Склад визначено жеребом',
 			playButton: '✅ Граю',
 			passButton: '❌ Пас',
+			drawButton: '🎲 Жереб',
+			pingButton: '🔔 Нагадати',
+			closeButton: '✖️ Закрити',
 		},
 		/** The messages under a card; each is a reply to it. */
 		messages: {
@@ -59,6 +63,14 @@ export const texts = {
 			startsAt: (time: string): string => ` Старт о ${time}.`,
 			movedUp: (mention: string, game: string): string =>
 				`${mention}, звільнилось місце — ти граєш у ${game}.`,
+			drawn: (squad: string, bench: string): string =>
+				`🎲 Жереб кинуто. У склад: ${squad}. На лаву: ${bench}.`,
+			ping: (mentions: string): string => `🔔 Чекаємо на відповідь: ${mentions}`,
+			pingMore: (mentions: string): string => `🔔 ${mentions}`,
+			closedByAuthor: (game: string, mentions: string): string =>
+				`✖️ Пул на ${game} закрито автором. ${mentions}`,
+			closedByAuthorAt: (game: string, time: string, mentions: string): string =>
+				`✖️ Пул на ${game} (${time}) закрито автором. ${mentions}`,
 		},
 		toasts: {
 			inSquad: 'Ти в грі ✅',
@@ -67,6 +79,15 @@ export const texts = {
 			passed: 'Пас ❌',
 			alreadyPassed: 'Ти вже пасуєш',
 			closed: 'Цей пул уже закрито',
+			pinged: (count: number): string => `Нагадав: ${count}`,
+			pingedJustNow: 'Щойно нагадав — спробуй трохи згодом',
+			allAnswered: 'Усі вже відповіли',
+			drawn: 'Жереб кинуто 🎲',
+			drawNotPlaying: 'Жереб кидають ті, хто в пулі',
+			drawUsed: 'Жереб уже кинули',
+			benchEmpty: 'Лава порожня — жереб не потрібен',
+			closedByYou: 'Пул закрито',
+			closeNotAuthor: 'Закрити може лише автор',
 		},
 		replies: {
 			noOpenPool: 'Зараз немає відкритих пулів. Відкрий: /pool',
@@ -75,6 +96,12 @@ export const texts = {
 			badTime: (token: string): string => `Не зрозумів «${token}». Час пиши як 21:00 або 21.00.`,
 			badToken: (token: string): string =>
 				`Не зрозумів «${token}». Формат: /pool [гра] [розмір] [час], напр. /pool cs2 5 21:00.`,
+			openPools: 'Відкриті пули:',
+			openPool: (game: string, when: string, fill: string): string =>
+				`• ${game} · ${when} · ${fill}`,
+			fill: (players: number, size: number): string => `${players}/${size}`,
+			onBench: (count: number): string => `, +${count} на лаві`,
+			cardLink: (url: string): string => ` → <a href="${url}">картка</a>`,
 		},
 	},
 } as const;

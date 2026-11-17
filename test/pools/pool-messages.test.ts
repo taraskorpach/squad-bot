@@ -1,13 +1,100 @@
 import { describe, expect, it } from 'vitest';
 import {
 	argsErrorText,
+	cardLink,
+	closedByAuthorText,
+	drawRefusalToast,
+	drawText,
 	movedUpText,
 	openingMessages,
 	openingWhen,
+	openPoolsText,
+	pingMessages,
 	squadCompleteText,
 	toastOf,
 } from '../../src/pools/pool-messages';
 import type { Placement } from '../../src/pools/pool-rules';
+import type { Pool } from '../../src/pools/pool-store';
+
+describe('pingMessages', () => {
+	it('asks for answers, with the first chunk of mentions, then the rest in chunks', () => {
+		expect(pingMessages(['m1', 'm2', 'm3', 'm4', 'm5', 'm6'], 5)).toEqual([
+			'🔔 Чекаємо на відповідь: m1, m2, m3, m4, m5',
+			'🔔 m6',
+		]);
+	});
+});
+
+describe('drawText', () => {
+	it('lists the whole squad and the whole bench', () => {
+		expect(drawText(['m2', 'm3'], ['m1'])).toBe('🎲 Жереб кинуто. У склад: m2, m3. На лаву: m1.');
+	});
+});
+
+describe('closedByAuthorText', () => {
+	it('names the pool by its start time, when it had one', () => {
+		expect(closedByAuthorText('CS2', kyiv(16, 21), ['m1', 'm2'])).toBe(
+			'✖️ Пул на CS2 (21:00) закрито автором. m1, m2',
+		);
+		expect(closedByAuthorText('R&D', undefined, ['m1'])).toBe(
+			'✖️ Пул на R&amp;D закрито автором. m1',
+		);
+	});
+});
+
+describe('drawRefusalToast', () => {
+	it.each([
+		['used', 'Жереб уже кинули'],
+		['not-playing', 'Жереб кидають ті, хто в пулі'],
+		['bench-empty', 'Лава порожня — жереб не потрібен'],
+	] as const)('answers %s with its toast', (refusal, toast) => {
+		expect(drawRefusalToast(refusal)).toBe(toast);
+	});
+});
+
+describe('cardLink', () => {
+	it("links to a supergroup's message by the chat id without its -100", () => {
+		expect(cardLink(-1001234567890, 42)).toBe('https://t.me/c/1234567890/42');
+	});
+});
+
+describe('openPoolsText', () => {
+	const pool = (fields: Partial<Pool>): Pool => ({
+		id: 1,
+		game: 'CS2',
+		size: 5,
+		authorId: 1,
+		openedAt: kyiv(16, 18),
+		closesAt: kyiv(16, 21),
+		status: 'open',
+		squadAnnounced: false,
+		drawn: false,
+		...fields,
+	});
+
+	it('lists each open pool with its start, its fill, its bench and a link to its card', () => {
+		const listed = [
+			{ pool: pool({ startsAt: kyiv(16, 21), messageId: 42 }), players: 3, bench: 0 },
+			{ pool: pool({ id: 2, game: 'Dota2', messageId: 43 }), players: 5, bench: 1 },
+			{ pool: pool({ id: 3, game: '<3' }), players: 1, bench: 0 },
+		];
+
+		expect(openPoolsText(listed, -1001234567890, kyiv(16, 19))).toBe(
+			[
+				'Відкриті пули:',
+				'• CS2 · сьогодні о 21:00 · 3/5 → <a href="https://t.me/c/1234567890/42">картка</a>',
+				'• Dota2 · зараз · 5/5, +1 на лаві → <a href="https://t.me/c/1234567890/43">картка</a>',
+				'• &lt;3 · зараз · 1/5',
+			].join('\n'),
+		);
+	});
+
+	it('says none is open, and how to open one', () => {
+		expect(openPoolsText([], -1001234567890, kyiv(16, 19))).toBe(
+			'Зараз немає відкритих пулів. Відкрий: /pool',
+		);
+	});
+});
 
 describe('toastOf', () => {
 	it.each<[Placement, string]>([
