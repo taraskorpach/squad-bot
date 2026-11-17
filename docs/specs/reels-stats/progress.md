@@ -8,10 +8,10 @@
 
 ## Success metrics
 
-- `/stats` names who sends the most reels, and the friends recognize the order.
+- `/stats` names who sends the most reels, TikToks, videos and posts, and the friends recognize the order.
 - The баян gets called out in the chat, and nobody asks to turn it off.
 
 ## Phases
 
-- [ ] Phase 1 — Reels on the board → `phases/phase-1-reels-board.md`
+- [ ] Phase 1 — Posts on the board → `phases/phase-1-content-board.md`
 - [ ] Phase 2 — The баян and 👀 → `phases/phase-2-bayan-and-reaction.md`
