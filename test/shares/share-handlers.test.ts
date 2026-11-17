@@ -4,7 +4,7 @@ import { trackShares } from '../../src/shares/share-handlers';
 import { captionMessage, hiddenLinkMessage, linkMessage, withLinks } from '../helpers/links';
 import { freshRoom, type RoomStub, roomWith, rows } from '../helpers/rooms';
 import { telegram } from '../helpers/telegram';
-import { command, textMessage, users } from '../helpers/updates';
+import { CHAT_ID, command, textMessage, users } from '../helpers/updates';
 
 const MINUTE = 60 * 1000;
 
@@ -135,6 +135,80 @@ describe('a message with posts', () => {
 		expect(await rows(stub, 'SELECT kind FROM events ORDER BY id')).toEqual([
 			{ kind: 'all' },
 			{ kind: 'share' },
+		]);
+	});
+});
+
+describe('a post the chat has seen', () => {
+	// 17.11.2026 at 21:40 in Kyiv, two hours ahead of UTC in winter.
+	const NOW = Date.UTC(2026, 10, 17, 19, 40);
+	const seconds = (ms: number) => Math.floor(ms / 1000);
+	const DAY = 24 * 60 * MINUTE;
+
+	/** A room on a fixed clock, where Олег sent the Short at 21:40 yesterday. */
+	async function roomWithFirstShare() {
+		const stub = await roomWith([trackShares], { clock: () => NOW });
+		const first = linkMessage('https://www.youtube.com/shorts/dQw4w9WgXcQ', {
+			from: oleg,
+			date: seconds(NOW - DAY),
+		});
+		await stub.handleUpdate(first);
+		telegram.reset();
+		return { stub, firstId: first.message?.message_id };
+	}
+
+	it('gets the баян in reply: who sent it first, when, and a link to their message', async () => {
+		const { stub, firstId } = await roomWithFirstShare();
+		const repeat = linkMessage('https://youtu.be/dQw4w9WgXcQ', { from: maks, date: seconds(NOW) });
+
+		await stub.handleUpdate(repeat);
+
+		expect(telegram.callsTo('sendMessage')).toEqual([
+			{
+				chat_id: CHAT_ID,
+				text: `🪗 Баян! Уже було — Олег, вчора о 21:40 → <a href="https://t.me/c/1234567890/${firstId}">оригінал</a>`,
+				parse_mode: 'HTML',
+				link_preview_options: { is_disabled: true },
+				reply_parameters: {
+					message_id: repeat.message?.message_id,
+					allow_sending_without_reply: true,
+				},
+			},
+		]);
+		expect(await refsOf(stub)).toEqual(['youtube:dQw4w9WgXcQ', 'youtube:dQw4w9WgXcQ']);
+	});
+
+	it("names the sender themselves for their own repeat, and records it for the board's once-per-post count", async () => {
+		const { stub } = await roomWithFirstShare();
+
+		await stub.handleUpdate(
+			linkMessage('https://youtu.be/dQw4w9WgXcQ', { from: oleg, date: seconds(NOW) }),
+		);
+
+		const [reply] = telegram.callsTo('sendMessage');
+		expect(String(reply?.text)).toMatch(/^🪗 Баян! Уже було — Олег, вчора о 21:40 → /);
+		expect(await shares(stub)).toHaveLength(2);
+	});
+
+	it('answers a message with two posts the chat has seen in one reply, a line each', async () => {
+		const { stub } = await roomWithFirstShare();
+		await stub.handleUpdate(
+			linkMessage('https://vm.tiktok.com/ZMhvqJ8Fx/', { from: taras, date: seconds(NOW - DAY) }),
+		);
+		telegram.reset();
+
+		await stub.handleUpdate(
+			linkMessage('https://youtu.be/dQw4w9WgXcQ https://vm.tiktok.com/ZMhvqJ8Fx/', {
+				from: maks,
+				date: seconds(NOW),
+			}),
+		);
+
+		const replies = telegram.callsTo('sendMessage');
+		expect(replies).toHaveLength(1);
+		expect(String(replies[0]?.text).split('\n')).toEqual([
+			expect.stringMatching(/^🪗 Баян! Уже було — Олег, вчора о 21:40 → /),
+			expect.stringMatching(/^🪗 Баян! Уже було — Тарас, вчора о 21:40 → /),
 		]);
 	});
 });
