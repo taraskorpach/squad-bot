@@ -51,7 +51,7 @@ describe('arming', () => {
 	});
 
 	it('points it at the close for a pool now, three hours on', async () => {
-		const stub = await opened('/pool', kyiv(16, 18));
+		const stub = await opened('/pool CS2', kyiv(16, 18));
 
 		expect(await alarmOf(stub)).toBe(kyiv(16, 21));
 	});
@@ -63,7 +63,7 @@ describe('arming', () => {
 	});
 
 	it('brings a lost alarm back with the next update', async () => {
-		const stub = await opened('/pool', kyiv(16, 18));
+		const stub = await opened('/pool CS2', kyiv(16, 18));
 		await runInDurableObject(stub, (_room, state) => state.storage.deleteAlarm());
 
 		await stub.handleUpdate(textMessage('привіт', { from: oleg }));
@@ -147,7 +147,7 @@ describe('a card that never got out', () => {
 		const stub = await roomWith([pooling, poolTaps], { clock: () => now });
 		await stub.handleUpdate(textMessage('привіт', { from: oleg }));
 		telegram.fail('sendMessage', { status: 400, description: 'chat not found' });
-		await stub.handleUpdate(command('/pool', { from: taras, date: now / 1000 }));
+		await stub.handleUpdate(command('/pool CS2', { from: taras, date: now / 1000 }));
 		telegram.reset();
 
 		await runDurableObjectAlarm(stub);
@@ -163,7 +163,7 @@ describe('a card that never got out', () => {
 		now = kyiv(16, 18);
 		const stub = await roomWith([pooling, poolTaps], { clock: () => now });
 		telegram.fail('sendMessage', { status: 400, description: 'chat not found' }, 5);
-		await stub.handleUpdate(command('/pool', { from: taras, date: now / 1000 }));
+		await stub.handleUpdate(command('/pool CS2', { from: taras, date: now / 1000 }));
 		const retries: unknown[] = [];
 
 		for (const wait of [0, 1, 2, 4]) {
@@ -197,7 +197,7 @@ describe('midnight', () => {
 
 describe('an unexpected error in the alarm', () => {
 	it('sets the alarm a minute ahead instead of stopping or looping', async () => {
-		const stub = await opened('/pool', kyiv(16, 18));
+		const stub = await opened('/pool CS2', kyiv(16, 18));
 		await runInDurableObject(stub, (room: ChatRoom) => {
 			room.timers = {
 				...room.timers,

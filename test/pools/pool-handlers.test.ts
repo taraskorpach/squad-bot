@@ -120,7 +120,7 @@ describe('/pool', () => {
 	it('records the card and every message under it as the pool’s', async () => {
 		const stub = await roomKnowing(EVERYONE);
 
-		await stub.handleUpdate(poolCommand('/pool'));
+		await stub.handleUpdate(poolCommand('/pool CS2'));
 
 		const [pool] = await rows(stub, 'SELECT message_id FROM pools');
 		const recorded = await rows(stub, 'SELECT message_id FROM pool_messages ORDER BY message_id');
@@ -131,7 +131,7 @@ describe('/pool', () => {
 	it('opens a pool for now that closes three hours after it opened', async () => {
 		const stub = await roomKnowing([users.taras]);
 
-		await stub.handleUpdate(poolCommand('/pool'));
+		await stub.handleUpdate(poolCommand('/pool CS2'));
 
 		expect(await rows(stub, 'SELECT game, size, starts_at, closes_at FROM pools')).toEqual([
 			{ game: 'CS2', size: 5, starts_at: null, closes_at: OPENED_AT + 3 * HOUR },
@@ -171,7 +171,7 @@ describe('/pool', () => {
 		const stub = await roomKnowing(EVERYONE);
 		telegram.fail('sendMessage', { status: 400, description: 'chat not found' });
 
-		await stub.handleUpdate(poolCommand('/pool'));
+		await stub.handleUpdate(poolCommand('/pool CS2'));
 
 		expect(await rows(stub, "SELECT message_id FROM pools WHERE status = 'open'")).toEqual([
 			{ message_id: null },

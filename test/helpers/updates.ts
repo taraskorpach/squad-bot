@@ -116,9 +116,12 @@ export interface TapOptions {
 	chatId?: number;
 	/** The id of the bot's message that carries the button. */
 	messageId?: number;
+	/** The message that bot's message replies to, such as the `/pool` a menu answers. */
+	replyTo?: number;
 }
 
 export function tap(data: string, options: TapOptions = {}): Update {
+	const chat = supergroup(options.chatId ?? CHAT_ID);
 	return {
 		update_id: nextId(),
 		callback_query: {
@@ -129,9 +132,19 @@ export function tap(data: string, options: TapOptions = {}): Update {
 			message: {
 				message_id: options.messageId ?? nextId(),
 				date: nowSeconds(),
-				chat: supergroup(options.chatId ?? CHAT_ID),
+				chat,
 				from: BOT_USER,
 				text: 'card',
+				...(options.replyTo !== undefined && {
+					reply_to_message: {
+						message_id: options.replyTo,
+						date: nowSeconds(),
+						chat,
+						from: options.from ?? users.taras,
+						text: '/pool',
+						reply_to_message: undefined,
+					},
+				}),
 			},
 		},
 	};

@@ -151,7 +151,7 @@ describe('✅ and ❌', () => {
 		const stub = await roomWith([pooling, poolTaps], { clock: () => TAPPED_AT });
 		await stub.handleUpdate(textMessage('привіт', { from: taras }));
 		telegram.fail('sendMessage', { status: 400, description: 'chat not found' });
-		await stub.handleUpdate(command('/pool', { from: taras, date: OPENED_AT / 1000 }));
+		await stub.handleUpdate(command('/pool CS2', { from: taras, date: OPENED_AT / 1000 }));
 
 		await stub.handleUpdate(tap('p:1:in', { from: oleg, messageId: 555 }));
 

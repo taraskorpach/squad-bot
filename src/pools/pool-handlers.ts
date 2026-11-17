@@ -6,19 +6,26 @@ import { texts } from '../texts';
 import { answersOf } from './answer-store';
 import { applyAnswer, openPool, showAnswer } from './pool-actions';
 import { parsePoolArgs, startOf } from './pool-args';
+import { menuFor, menuScreen } from './pool-menu';
 import { argsErrorText, openPoolsText } from './pool-messages';
 import { joinTarget, lineupOf } from './pool-rules';
 import { newestOpenPool, openPools, poolOfMessage } from './pool-store';
 
 /**
- * `/pool [гра] [розмір] [час]` opens a pool; `/join` answers Граю without a tap; `/pools` lists
- * the open ones.
+ * `/pool [гра] [розмір] [час]` opens a pool, and `/pool` alone the menu that builds one; `/join`
+ * answers Граю without a tap; `/pools` lists the open ones.
  */
 export const pooling = new Composer<BotContext>();
 
 pooling.command('pool', async (ctx) => {
 	const author = ctx.from;
 	if (!author || ctx.room.stale) return;
+	if (ctx.match.trim() === '') {
+		const { text, keyboard } = menuScreen(menuFor(author.id), ctx.room.clock());
+		// Nothing has committed yet, so a failed reply is the failure policy's to judge.
+		await ctx.reply(text, { ...replyingTo(ctx.msg.message_id), reply_markup: keyboard });
+		return;
+	}
 	const parsed = parsePoolArgs(ctx.match);
 	if (!parsed.ok) {
 		// Nothing has committed yet, so a failed reply is the failure policy's to judge.

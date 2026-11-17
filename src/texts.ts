@@ -101,6 +101,27 @@ export const texts = {
 			closedByYou: 'Пул закрито',
 			closeNotAuthor: 'Закрити може лише автор',
 		},
+		/** The menu a bare /pool opens: the game, the seats, then the time, all with buttons. */
+		menu: {
+			/** The games on buttons, in order; any other opens by command. */
+			games: ['CS2', 'Мафія'],
+			pickGame: '🎮 Новий пул — у що граємо?\nІншу гру відкривай командою: /pool назва 5 21:00',
+			pickSeats: (game: string): string => `🎮 ${game} — скільки місць?`,
+			pickTime: (game: string, seats: string): string => `🎮 ${game} · ${seats} — коли?`,
+			pickHour: (game: string, seats: string): string => `🎮 ${game} · ${seats} — о котрій?`,
+			pickMinute: (game: string, seats: string, hour: string): string =>
+				`🎮 ${game} · ${seats} — о ${hour}:__?`,
+			noLimitButton: '∞ Без ліміту',
+			nowButton: 'Зараз',
+			otherTimeButton: '🕓 Інший час',
+			backButton: '← Назад',
+			cancelButton: '✖️ Скасувати',
+			notYours: 'Це меню не твоє — відкрий своє: /pool',
+			hourPassed: 'Ця година вже минула — обери іншу',
+			cancelled: 'Скасовано',
+			/** The menu in place of itself, when Telegram won't delete it after the pool opened. */
+			opened: '✅ Пул відкрито',
+		},
 		replies: {
 			noOpenPool: 'Зараз немає відкритих пулів. Відкрий: /pool',
 			closedPool: 'Цей пул уже закрито.',

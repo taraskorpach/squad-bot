@@ -10,6 +10,7 @@ import { welcoming } from './members/welcome-handlers';
 import { runDueTimers } from './pools/pool-alarm';
 import { poolTaps } from './pools/pool-callbacks';
 import { pooling } from './pools/pool-handlers';
+import { poolMenu } from './pools/pool-menu-taps';
 import { openPools } from './pools/pool-store';
 import { nextDue } from './pools/pool-timers';
 import { countDomikpisik } from './stats/domikpisik-handlers';
@@ -24,6 +25,7 @@ export const FEATURES: readonly Middleware<BotContext>[] = [
 	artemIsAlwaysRight,
 	showStats,
 	pooling,
+	poolMenu,
 	poolTaps,
 ];
 
