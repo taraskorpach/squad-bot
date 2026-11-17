@@ -8,20 +8,27 @@ export interface WallTime {
 	minute: number;
 }
 
+export interface Occurrences {
+	yesterday: number;
+	today: number;
+	tomorrow: number;
+}
+
 /**
  * The instants `time` names on the Kyiv dates of yesterday, today and tomorrow around `ms`.
  * Temporal's compatible rule: a time in the spring-forward gap moves later by the gap
  * (03:30 becomes 04:30), and in the repeated autumn hour the earlier one counts.
  */
-export function occurrencesAround(time: WallTime, ms: number): number[] {
+export function occurrencesAround(time: WallTime, ms: number): Occurrences {
 	const today = inKyiv(ms).toPlainDate();
-	return [-1, 0, 1].map((days) => {
+	const on = (days: number): number => {
 		const { year, month, day } = today.add({ days });
 		return Temporal.ZonedDateTime.from(
 			{ timeZone: KYIV, year, month, day, hour: time.hour, minute: time.minute },
 			{ disambiguation: 'compatible' },
 		).epochMilliseconds;
-	});
+	};
+	return { yesterday: on(-1), today: on(0), tomorrow: on(1) };
 }
 
 /** Kyiv calendar days from `now`'s date to `ms`'s: 0 the same day, 1 the next, -1 the one before. */

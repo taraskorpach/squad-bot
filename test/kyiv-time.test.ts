@@ -7,28 +7,28 @@ const utc = (month: number, day: number, hour: number, minute = 0) =>
 describe('occurrencesAround', () => {
 	it("is the time on yesterday's, today's and tomorrow's Kyiv date", () => {
 		// 16.11 at 15:00 in Kyiv, two hours ahead of UTC in winter.
-		expect(occurrencesAround({ hour: 21, minute: 0 }, utc(11, 16, 13))).toEqual([
-			utc(11, 15, 19),
-			utc(11, 16, 19),
-			utc(11, 17, 19),
-		]);
+		expect(occurrencesAround({ hour: 21, minute: 0 }, utc(11, 16, 13))).toEqual({
+			yesterday: utc(11, 15, 19),
+			today: utc(11, 16, 19),
+			tomorrow: utc(11, 17, 19),
+		});
 	});
 
 	it('counts days by the Kyiv calendar, not by UTC', () => {
 		// 00:30 on 17.11 in Kyiv is still the 16th in UTC.
-		const [, today] = occurrencesAround({ hour: 12, minute: 0 }, utc(11, 16, 22, 30));
+		const { today } = occurrencesAround({ hour: 12, minute: 0 }, utc(11, 16, 22, 30));
 
 		expect(today).toBe(utc(11, 17, 10));
 	});
 
 	it('moves a time in the spring-forward gap later by the gap: 03:30 becomes 04:30', () => {
-		const [, today] = occurrencesAround({ hour: 3, minute: 30 }, utc(3, 29, 10));
+		const { today } = occurrencesAround({ hour: 3, minute: 30 }, utc(3, 29, 10));
 
 		expect(today).toBe(utc(3, 29, 1, 30));
 	});
 
 	it('takes the earlier 03:30 of the repeated autumn hour', () => {
-		const [, today] = occurrencesAround({ hour: 3, minute: 30 }, utc(10, 25, 10));
+		const { today } = occurrencesAround({ hour: 3, minute: 30 }, utc(10, 25, 10));
 
 		expect(today).toBe(utc(10, 25, 0, 30));
 	});
