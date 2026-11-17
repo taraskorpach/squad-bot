@@ -102,15 +102,18 @@ export function pingMessages(mentions: readonly string[], chunkSize: number): st
 	);
 }
 
-/** At the start time: the players, not the bench, with the fill while the squad is short. */
+/**
+ * At the start time: the players, not the bench, with the fill while the squad is short. A pool
+ * without a seat limit is never short.
+ */
 export function startPingText(
 	game: string,
 	mentions: readonly string[],
 	players: number,
-	size: number,
+	size: number | undefined,
 ): string {
 	const { messages } = texts.pool;
-	const fill = players < size ? messages.startFill(players, size) : '';
+	const fill = size !== undefined && players < size ? messages.startFill(players, size) : '';
 	return messages.startPing(escapeHtml(game), mentions.join(', ')) + fill;
 }
 

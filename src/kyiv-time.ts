@@ -36,6 +36,12 @@ export function nextMidnight(ms: number): number {
 	return startOfDay(inKyiv(ms).toPlainDate().add({ days: 1 }));
 }
 
+/** The full hours still ahead on `ms`'s Kyiv date: at 18:40, 19 to 23; after 23:00, none. */
+export function upcomingHours(ms: number): number[] {
+	const { hour } = inKyiv(ms);
+	return Array.from({ length: 23 - hour }, (_, index) => hour + 1 + index);
+}
+
 /** Kyiv calendar days from `now`'s date to `ms`'s: 0 the same day, 1 the next, -1 the one before. */
 export function daysFrom(now: number, ms: number): number {
 	return inKyiv(now).toPlainDate().until(inKyiv(ms).toPlainDate(), { largestUnit: 'days' }).days;

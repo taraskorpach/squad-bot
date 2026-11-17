@@ -35,8 +35,10 @@ export const texts = {
 	},
 	pool: {
 		card: {
-			header: (game: string, size: number, when: string): string =>
-				`🎮 ${game} · ${size} ${plural(size, { one: 'місце', few: 'місця', many: 'місць' })} · ${when}`,
+			header: (game: string, size: number | undefined, when: string): string =>
+				`🎮 ${game} · ${seatsText(size)} · ${when}`,
+			/** `5 місць`, or `без ліміту` for a pool without a seat limit. */
+			seats: (size: number | undefined): string => seatsText(size),
 			now: 'зараз',
 			today: (time: string): string => `сьогодні о ${time}`,
 			tomorrow: (time: string): string => `завтра о ${time}`,
@@ -44,8 +46,8 @@ export const texts = {
 			author: (name: string): string => `Автор: ${name}`,
 			closed: '🔒 закрито',
 			closedByAuthor: '🔒 закрито автором',
-			players: (count: number, size: number, names: string): string =>
-				`✅ Грають (${count}/${size}): ${names}`,
+			players: (count: number, size: number | undefined, names: string): string =>
+				`✅ Грають (${size === undefined ? count : `${count}/${size}`}): ${names}`,
 			played: (names: string): string => `✅ Грали: ${names}`,
 			bench: (names: string): string => `🪑 Лава: ${names}`,
 			passed: (names: string): string => `❌ Пас: ${names}`,
@@ -99,6 +101,27 @@ export const texts = {
 			closedByYou: 'Пул закрито',
 			closeNotAuthor: 'Закрити може лише автор',
 		},
+		/** The menu a bare /pool opens: the game, the seats, then the time, all with buttons. */
+		menu: {
+			/** The games on buttons, in order; any other opens by command. */
+			games: ['CS2', 'Мафія'],
+			pickGame: '🎮 Новий пул — у що граємо?\nІншу гру відкривай командою: /pool назва 5 21:00',
+			pickSeats: (game: string): string => `🎮 ${game} — скільки місць?`,
+			pickTime: (game: string, seats: string): string => `🎮 ${game} · ${seats} — коли?`,
+			pickHour: (game: string, seats: string): string => `🎮 ${game} · ${seats} — о котрій?`,
+			pickMinute: (game: string, seats: string, hour: string): string =>
+				`🎮 ${game} · ${seats} — о ${hour}:__?`,
+			noLimitButton: '∞ Без ліміту',
+			nowButton: 'Зараз',
+			otherTimeButton: '🕓 Інший час',
+			backButton: '← Назад',
+			cancelButton: '✖️ Скасувати',
+			notYours: 'Це меню не твоє — відкрий своє: /pool',
+			hourPassed: 'Ця година вже минула — обери іншу',
+			cancelled: 'Скасовано',
+			/** The menu in place of itself, when Telegram won't delete it after the pool opened. */
+			opened: '✅ Пул відкрито',
+		},
 		replies: {
 			noOpenPool: 'Зараз немає відкритих пулів. Відкрий: /pool',
 			closedPool: 'Цей пул уже закрито.',
@@ -109,7 +132,8 @@ export const texts = {
 			openPools: 'Відкриті пули:',
 			openPool: (game: string, when: string, fill: string): string =>
 				`• ${game} · ${when} · ${fill}`,
-			fill: (players: number, size: number): string => `${players}/${size}`,
+			fill: (players: number, size: number | undefined): string =>
+				size === undefined ? `${players} у грі` : `${players}/${size}`,
 			onBench: (count: number): string => `, +${count} на лаві`,
 			cardLink: (url: string): string => ` → <a href="${url}">картка</a>`,
 		},
@@ -139,4 +163,10 @@ export function compareNames(a: string, b: string): number {
 export function plural(count: number, forms: { one: string; few: string; many: string }): string {
 	const rule = UKRAINIAN_PLURALS.select(count);
 	return rule === 'one' || rule === 'few' ? forms[rule] : forms.many;
+}
+
+/** A pool's seats as the card names them: `5 місць`, or `без ліміту`. */
+function seatsText(size: number | undefined): string {
+	if (size === undefined) return 'без ліміту';
+	return `${size} ${plural(size, { one: 'місце', few: 'місця', many: 'місць' })}`;
 }

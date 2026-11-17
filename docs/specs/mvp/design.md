@@ -106,6 +106,8 @@ No reply, ever. The call is counted for `/stats`.
                           ▼
                        closed: the card turns final and loses its buttons
 ```
+`/pool` with nothing after it opens a menu that builds the same pool with buttons, and a pool
+can have no seat limit (`docs/specs/pool-menu/design.md`).
 
 ### `/join`
 - As a reply to a card, or to any message the bot posted for a pool (a ping, an announcement):

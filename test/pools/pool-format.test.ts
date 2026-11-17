@@ -152,3 +152,25 @@ describe('renderCard', () => {
 		expect(players).toBe('✅ Грають (1/5): &lt;3 Тарас');
 	});
 });
+
+describe('renderCard without a seat limit', () => {
+	const unlimited: Pool = { ...pool, game: 'Мафія', size: undefined };
+
+	it('says there is no limit, counts the players without a size, and never offers 🎲', () => {
+		const shown = lineup({ players: [1, 2, 3, 4, 5, 6], passed: [7] });
+		const card = renderCard(unlimited, shown, NAMES, kyiv(16, 19));
+		const [header, , , players] = card.text.split('\n');
+
+		expect(header).toBe('🎮 Мафія · без ліміту · сьогодні о 21:00');
+		expect(players).toBe('✅ Грають (6): Тарас, Олег, Андрій, Ігор, Макс, Діма');
+		expect(JSON.stringify(card.keyboard)).not.toContain('Жереб');
+	});
+
+	it('reads like any closed card once closed', () => {
+		const closed: Pool = { ...unlimited, status: 'closed', closedBy: 'auto' };
+		const shown = lineup({ players: [1] });
+		const [header] = renderCard(closed, shown, NAMES, kyiv(17, 1)).text.split('\n');
+
+		expect(header).toBe('🎮 Мафія · без ліміту · 16.11 о 21:00');
+	});
+});

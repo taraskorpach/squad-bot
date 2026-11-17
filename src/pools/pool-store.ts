@@ -1,9 +1,13 @@
 // The pools' SQL. Records come out as plain data; the rules and the card never see rows.
 
+/** `pools.size` of a pool without a seat limit: the column is NOT NULL, so 0 stands in. */
+const NO_LIMIT = 0;
+
 export interface Pool {
 	id: number;
 	game: string;
-	size: number;
+	/** The seats; none for a pool without a limit. */
+	size?: number;
 	authorId: number;
 	openedAt: number;
 	/** None for a pool "now". */
@@ -55,7 +59,7 @@ export function insertPool(sql: SqlStorage, pool: NewPool): number {
 			`INSERT INTO pools (game, size, author_id, opened_at, starts_at, closes_at)
 			 VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
 			pool.game,
-			pool.size,
+			pool.size ?? NO_LIMIT,
 			pool.authorId,
 			pool.openedAt,
 			pool.startsAt ?? null,
@@ -148,7 +152,7 @@ function poolOf(row: PoolRow): Pool {
 	return {
 		id: row.id,
 		game: row.game,
-		size: row.size,
+		size: row.size === NO_LIMIT ? undefined : row.size,
 		authorId: row.author_id,
 		openedAt: row.opened_at,
 		startsAt: row.starts_at ?? undefined,

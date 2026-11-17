@@ -207,3 +207,29 @@ describe('answer', () => {
 		expect(answer(refilled, [play(1, 1), pass(2, 5, 2)], 3, 'play', 99).squadCompleted).toBe(false);
 	});
 });
+
+describe('a pool without a seat limit', () => {
+	const answers = [play(1, 1), play(2, 2), pass(3, 3), play(4, 4)];
+
+	it('seats every play and benches nobody', () => {
+		expect(lineupOf(undefined, answers, [1, 2, 3, 4, 5])).toEqual({
+			players: [1, 2, 4],
+			bench: [],
+			passed: [3],
+			unanswered: [5],
+		});
+	});
+
+	it('seats a newcomer at once, and never completes a squad', () => {
+		expect(answer({ size: undefined, squadAnnounced: false }, answers, 9, 'play', 50)).toEqual({
+			write: play(9, 5, 50),
+			outcome: 'squad',
+			movedUp: [],
+			squadCompleted: false,
+		});
+	});
+
+	it('draws everyone into the squad', () => {
+		expect(draw(undefined, answers, () => 0)).toMatchObject({ squad: [1, 2, 4], bench: [] });
+	});
+});

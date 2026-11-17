@@ -19,7 +19,8 @@ import { closeOpenPool, insertPool, markSquadAnnounced, poolById } from './pool-
 
 export interface PoolRequest {
 	game: string;
-	size: number;
+	/** None for a pool without a seat limit. */
+	size?: number;
 	authorId: number;
 	/** When the author sent /pool: the pool and its events are dated by it. */
 	openedAt: number;

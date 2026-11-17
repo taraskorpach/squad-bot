@@ -194,3 +194,37 @@ describe('openingMessages', () => {
 		]);
 	});
 });
+
+describe('a pool without a seat limit', () => {
+	it('calls the players at the start with no fill', () => {
+		expect(startPingText('Мафія', ['m1', 'm2', 'm3'], 3, undefined)).toBe(
+			'⏰ Мафія — час! m1, m2, m3',
+		);
+	});
+
+	it('lists its fill on /pools as the number in the game', () => {
+		const unlimited: Pool = {
+			id: 4,
+			game: 'Мафія',
+			authorId: 1,
+			openedAt: kyiv(16, 18),
+			startsAt: kyiv(16, 21),
+			closesAt: kyiv(17, 0),
+			messageId: 44,
+			status: 'open',
+			squadAnnounced: false,
+			drawn: false,
+			startPinged: false,
+			timerAttempts: 0,
+		};
+
+		expect(
+			openPoolsText([{ pool: unlimited, players: 6, bench: 0 }], -1001234567890, kyiv(16, 19)),
+		).toBe(
+			[
+				'Відкриті пули:',
+				'• Мафія · сьогодні о 21:00 · 6 у грі → <a href="https://t.me/c/1234567890/44">картка</a>',
+			].join('\n'),
+		);
+	});
+});

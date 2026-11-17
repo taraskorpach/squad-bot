@@ -5,7 +5,22 @@ import {
 	daysFrom,
 	nextMidnight,
 	occurrencesAround,
+	upcomingHours,
 } from '../src/kyiv-time';
+
+describe('upcomingHours', () => {
+	// 16.11.2030 in Kyiv, two hours ahead of UTC in winter.
+	const kyiv = (hour: number, minute = 0) => Date.UTC(2030, 10, 16, hour - 2, minute);
+
+	it.each([
+		['at 18:40', kyiv(18, 40), [19, 20, 21, 22, 23]],
+		['on the hour, which is now rather than ahead', kyiv(18), [19, 20, 21, 22, 23]],
+		['after 23:00, none', kyiv(23, 10), []],
+		['just after midnight', kyiv(0, 30), Array.from({ length: 23 }, (_, index) => index + 1)],
+	])('lists the full hours still ahead today %s', (_case, now, hours) => {
+		expect(upcomingHours(now)).toEqual(hours);
+	});
+});
 
 describe('nextMidnight', () => {
 	it('is the next 00:00 on the Kyiv clock', () => {
