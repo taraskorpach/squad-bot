@@ -45,17 +45,30 @@ export interface MessageOptions {
 	 * Telegram's non-bot account), so a test sees the `sender_chat` check, not the bot check.
 	 */
 	senderChat?: Chat;
+	/** A reply to this message of the bot's, as `/join` under a card is. */
+	replyTo?: number;
 }
 
 type GroupMessage = Message & Update.NonChannel;
 
 function groupMessage(fields: Partial<GroupMessage>, options: MessageOptions): GroupMessage {
+	const chat = options.chat ?? supergroup(options.chatId ?? CHAT_ID);
 	return {
 		message_id: nextId(),
 		date: options.date ?? nowSeconds(),
-		chat: options.chat ?? supergroup(options.chatId ?? CHAT_ID),
+		chat,
 		from: options.from ?? users.taras,
 		...(options.senderChat && { sender_chat: options.senderChat }),
+		...(options.replyTo !== undefined && {
+			reply_to_message: {
+				message_id: options.replyTo,
+				date: 0,
+				chat,
+				from: BOT_USER,
+				text: '…',
+				reply_to_message: undefined,
+			},
+		}),
 		...fields,
 	};
 }

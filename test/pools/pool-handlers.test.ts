@@ -1,3 +1,4 @@
+import { runInDurableObject } from 'cloudflare:test';
 import type { User } from 'grammy/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { pooling } from '../../src/pools/pool-handlers';
@@ -172,5 +173,97 @@ describe('/pool', () => {
 		]);
 		expect(telegram.callsTo('sendMessage')).toHaveLength(1);
 		expect(await rows(stub, 'SELECT message_id FROM pool_messages')).toEqual([]);
+	});
+});
+
+describe('/join', () => {
+	function joinCommand(replyTo?: number) {
+		return command('/join', { from: users.oleg, date: OPENED_AT / 1000, replyTo });
+	}
+
+	/** Pool 1 (cs2), then pool 2 (dota), both opened by Тарас, with Олег known. */
+	async function twoPools(): Promise<RoomStub> {
+		const stub = await roomKnowing([users.taras, users.oleg]);
+		await stub.handleUpdate(poolCommand('/pool cs2'));
+		await stub.handleUpdate(poolCommand('/pool dota'));
+		telegram.reset();
+		return stub;
+	}
+
+	function joined(stub: RoomStub) {
+		return rows(stub, `SELECT pool_id, answered_at FROM answers WHERE user_id = ${users.oleg.id}`);
+	}
+
+	it('joins the newest open pool without a reply, with a 👌 and no message', async () => {
+		const stub = await twoPools();
+		const join = joinCommand();
+
+		await stub.handleUpdate(join);
+
+		expect(await joined(stub)).toEqual([{ pool_id: 2, answered_at: OPENED_AT }]);
+		expect(telegram.callsTo('setMessageReaction')).toEqual([
+			{
+				chat_id: CHAT_ID,
+				message_id: join.message?.message_id,
+				reaction: [{ type: 'emoji', emoji: '👌' }],
+			},
+		]);
+		expect(telegram.callsTo('sendMessage')).toEqual([]);
+		expect(telegram.callsTo('editMessageText')).toHaveLength(1);
+	});
+
+	it('joins the pool a reply points at, through any message posted for it', async () => {
+		const stub = await twoPools();
+		const [opening] = await rows(
+			stub,
+			'SELECT MAX(message_id) AS id FROM pool_messages WHERE pool_id = 1',
+		);
+
+		await stub.handleUpdate(joinCommand(Number(opening?.id)));
+
+		expect(await joined(stub)).toEqual([{ pool_id: 1, answered_at: OPENED_AT }]);
+	});
+
+	it('says a pool is closed when the reply points at a closed one', async () => {
+		const stub = await twoPools();
+		await runInDurableObject(stub, (_room, state) => {
+			state.storage.sql.exec("UPDATE pools SET status = 'closed' WHERE id = 1");
+		});
+		const [card] = await rows(stub, 'SELECT message_id FROM pools WHERE id = 1');
+		const join = joinCommand(Number(card?.message_id));
+
+		await stub.handleUpdate(join);
+
+		expect(await joined(stub)).toEqual([]);
+		expect(telegram.callsTo('sendMessage')).toEqual([
+			{ chat_id: CHAT_ID, text: 'Цей пул уже закрито.', ...replyTo(join.message?.message_id) },
+		]);
+	});
+
+	it('says so when no pool is open', async () => {
+		const stub = await roomKnowing([users.oleg]);
+		const join = joinCommand();
+
+		await stub.handleUpdate(join);
+
+		expect(telegram.callsTo('sendMessage')).toEqual([
+			{
+				chat_id: CHAT_ID,
+				text: 'Зараз немає відкритих пулів. Відкрий: /pool',
+				...replyTo(join.message?.message_id),
+			},
+		]);
+	});
+
+	it('does nothing for a /join that arrives more than 10 minutes late', async () => {
+		const stub = await twoPools();
+		await runInDurableObject(stub, (room) => {
+			room.clock = () => OPENED_AT + 11 * 60 * 1000;
+		});
+
+		await stub.handleUpdate(joinCommand());
+
+		expect(await joined(stub)).toEqual([]);
+		expect(telegram.calls()).toEqual([]);
 	});
 });

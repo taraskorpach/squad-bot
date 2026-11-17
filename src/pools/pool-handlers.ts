@@ -1,11 +1,15 @@
 import { Composer } from 'grammy';
+import { attempt } from '../chat/attempt';
 import type { BotContext } from '../context';
 import { replyingTo, sentAt } from '../telegram';
-import { openPool } from './pool-actions';
+import { texts } from '../texts';
+import { applyAnswer, openPool, showAnswer } from './pool-actions';
 import { parsePoolArgs, startOf } from './pool-args';
 import { argsErrorText } from './pool-messages';
+import { joinTarget } from './pool-rules';
+import { newestOpenPool, poolOfMessage } from './pool-store';
 
-/** `/pool [гра] [розмір] [час]` opens a pool. */
+/** `/pool [гра] [розмір] [час]` opens a pool; `/join` answers Граю without a tap. */
 export const pooling = new Composer<BotContext>();
 
 pooling.command('pool', async (ctx) => {
@@ -27,4 +31,27 @@ pooling.command('pool', async (ctx) => {
 		startsAt: time && startOf(time, openedAt),
 		commandId: ctx.msg.message_id,
 	});
+});
+
+pooling.command('join', async (ctx) => {
+	const joiner = ctx.from;
+	if (!joiner || ctx.room.stale) return;
+	const replyId = ctx.msg.reply_to_message?.message_id;
+	const target = ctx.room.read((sql) =>
+		joinTarget(
+			replyId === undefined ? undefined : poolOfMessage(sql, replyId),
+			newestOpenPool(sql),
+		),
+	);
+	if (target.kind !== 'pool') {
+		const { closedPool, noOpenPool } = texts.pool.replies;
+		const reply = target.kind === 'closed' ? closedPool : noOpenPool;
+		await ctx.reply(reply, replyingTo(ctx.msg.message_id));
+		return;
+	}
+	const result = applyAnswer(ctx.room, target.poolId, joiner.id, 'play', sentAt(ctx.msg));
+	if (result.kind !== 'answered') return;
+	// The card shows the result; a reaction answers without another message.
+	await attempt('pools: the 👌 for /join', () => ctx.react('👌'));
+	await showAnswer(ctx.room, target.poolId, result.decision);
 });
