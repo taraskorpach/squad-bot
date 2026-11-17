@@ -65,7 +65,7 @@ async function main(): Promise<void> {
 	const setting = settingsFrom(values.env);
 	const api = new Api(setting('BOT_TOKEN'), { timeoutSeconds: API_TIMEOUT_SECONDS });
 	const me = await api.getMe();
-	// First, so the dev bot and the production bot can't be mistaken for each other.
+	// First, so it's clear which bot and env file a run targets.
 	console.log(`Bot: @${me.username} (${values.env})`);
 	await command({ api, me, setting, args });
 }
