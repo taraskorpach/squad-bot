@@ -17,6 +17,10 @@ export const texts = {
 		hiButton: HI_BUTTON,
 		hiToast: "Запам'ятав 👌",
 	},
+	/** Running jokes the bot answers; they stay out of the command menu. */
+	jokes: {
+		alwaysRight: 'Нагадую, Артем Поліченко завжди правий і це не обговорюється.',
+	},
 	/** The command menu in group chats, in its order. /domikpisik is a joke, not a feature. */
 	commandMenu: {
 		all: 'Тегнути всіх',
