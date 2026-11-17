@@ -38,6 +38,14 @@ export function membersInChat(sql: SqlStorage): Member[] {
 		.map(memberOf);
 }
 
+/** Every member the bot has learned, in the chat or not: the stats name leavers too. */
+export function knownMembers(sql: SqlStorage): Member[] {
+	return sql
+		.exec<MemberRow>('SELECT user_id, first_name, last_name, username FROM members')
+		.toArray()
+		.map(memberOf);
+}
+
 /** These members, whether or not they are still in the chat: a card keeps a leaver's name. */
 export function membersById(sql: SqlStorage, ids: readonly number[]): Member[] {
 	return sql

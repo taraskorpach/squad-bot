@@ -12,6 +12,7 @@ import { pooling } from './pools/pool-handlers';
 import { openPools } from './pools/pool-store';
 import { nextDue } from './pools/pool-timers';
 import { countDomikpisik } from './stats/domikpisik-handlers';
+import { showStats } from './stats/stats-handlers';
 import { API_TIMEOUT_SECONDS, personSending, sentAt } from './telegram';
 
 /** Every feature, in the order an update meets them. */
@@ -19,6 +20,7 @@ export const FEATURES: readonly Middleware<BotContext>[] = [
 	welcoming,
 	tagAll,
 	countDomikpisik,
+	showStats,
 	pooling,
 	poolTaps,
 ];

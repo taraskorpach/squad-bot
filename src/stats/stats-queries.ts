@@ -1,6 +1,8 @@
 // The boards' reads of the event record. What counts lives here, in code: the record keeps every
 // event, so a new board or rule needs no rebuild of a table whose history can't be regenerated.
 import type { MonthWindow } from '../kyiv-time';
+import { knownMembers } from '../members/member-store';
+import { displayNames } from '../members/mentions';
 import type { EventKind } from './event-store';
 
 /** A count this month and in all. */
@@ -42,6 +44,24 @@ const COUNTED: Record<EventKind, string> = {
 
 const THIS_MONTH_AND_IN_ALL =
 	'COUNT(*) FILTER (WHERE at >= ? AND at < ?) AS month, COUNT(*) AS all_time';
+
+/**
+ * Everything /stats shows for this Kyiv month. Names are told apart among every member the bot
+ * knows, so a namesake who left still gets the initial that tells the two apart.
+ */
+export function readStats(sql: SqlStorage, month: MonthWindow): Stats {
+	return {
+		tallies: {
+			all: tallies(sql, 'all', month),
+			domikpisik: tallies(sql, 'domikpisik', month),
+			pool_open: tallies(sql, 'pool_open', month),
+			join: tallies(sql, 'join', month),
+			pass: tallies(sql, 'pass', month),
+		},
+		joins: totalJoins(sql, month),
+		names: displayNames(knownMembers(sql)),
+	};
+}
 
 /** How often each person did `kind`, this month and in all: everyone who ever did it. */
 export function tallies(sql: SqlStorage, kind: EventKind, month: MonthWindow): Tally[] {
