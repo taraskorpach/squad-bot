@@ -34,7 +34,8 @@ The runbook is `README.md` (phase 4). Every item is ticked with its evidence. Or
 Deploy once with `wrangler deploy --var MENTION_CHUNK:10`, run `/all`, and ask who got a
 notification. If all six did, the next code PR sets `MENTION_CHUNK` to 10 in `wrangler.jsonc`;
 otherwise 5 stays. Either way, run the deploy workflow on `main` afterwards (manual dispatch) so the
-live setting matches the repo.
+live setting matches the repo. If the sixth didn't notify, the pools' one-message announcements need
+chunks too (ledger: `decision-announcements-in-one-message.md`).
 
 **The CPU check** reads "CPU Time per execution" in the dashboard for the Worker and the object
 after a day of use (wave 2 §2: 10 ms per request on Free, never measured for grammY).

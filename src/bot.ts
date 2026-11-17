@@ -1,15 +1,35 @@
 import { autoRetry } from '@grammyjs/auto-retry';
 import { Bot, type Middleware, type Transformer } from 'grammy';
 import type { UserFromGetMe } from 'grammy/types';
+import type { Timers } from './chat/room';
 import type { BotContext, UpdateRoom } from './context';
 import { tagAll } from './members/all-handlers';
 import { learningMembers } from './members/member-handlers';
 import { welcoming } from './members/welcome-handlers';
+import { runDueTimers } from './pools/pool-alarm';
+import { poolTaps } from './pools/pool-callbacks';
+import { pooling } from './pools/pool-handlers';
+import { openPools } from './pools/pool-store';
+import { nextDue } from './pools/pool-timers';
 import { countDomikpisik } from './stats/domikpisik-handlers';
+import { showStats } from './stats/stats-handlers';
 import { API_TIMEOUT_SECONDS, personSending, sentAt } from './telegram';
 
 /** Every feature, in the order an update meets them. */
-export const FEATURES: readonly Middleware<BotContext>[] = [welcoming, tagAll, countDomikpisik];
+export const FEATURES: readonly Middleware<BotContext>[] = [
+	welcoming,
+	tagAll,
+	countDomikpisik,
+	showStats,
+	pooling,
+	poolTaps,
+];
+
+/** The object's alarm. The open pools are its whole schedule, so chat/ imports no feature. */
+export const TIMERS: Timers = {
+	nextDue: (sql, now) => nextDue(openPools(sql), now),
+	run: runDueTimers,
+};
 
 /**
  * Capped: unbounded defaults would hold the chat's queue and sleep past the webhook.

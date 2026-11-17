@@ -17,9 +17,11 @@ Warm cache for forward-propagating learnings. One row per ledger entry with its
 - `docs/specs/_ledger/gotcha-bundler-tsconfig-misses-node-type-stripping.md` — [general] — type-check files Node runs as .ts under nodenext + erasableSyntaxOnly
 - `docs/specs/_ledger/gotcha-webhook-info-errors-only-after-delivery.md` — [general] — getWebhookInfo shows errors only after a delivery; probe the Worker yourself
 - `docs/specs/_ledger/gotcha-wrangler-action-uses-installed-wrangler.md` — [general] — npm ci before wrangler-action, or it deploys with the latest wrangler 4
+- `docs/specs/_ledger/gotcha-do-alarm-past-time-runs-now.md` — [general] — a DO alarm set in the past runs now; keep alarm tests' clocks in the future
 
 ## Principles
 - `principle-actions-commit-through-update-room.md` — [phase 6, 7, 8] — pool actions from a handler commit via ctx.room, or the update isn't recorded
+- `docs/specs/_ledger/principle-test-zone-windows-across-the-change.md` — [general] — test a Kyiv window with now and the boundary across a DST change
 
 ## Domain
 
@@ -31,6 +33,8 @@ Warm cache for forward-propagating learnings. One row per ledger entry with its
 - `decision-tag-window.md` — [phase 3, 7] — /all and 🔔 tag at most once per 30 s; every /all counts (Taras)
 - `decision-event-time-is-when-the-person-acted.md` — [phase 6, 9] — an event's at is its message's date for a command, the clock for a tap
 - `decision-release-all-at-once.md` — [phase 5] — A, B and C tried in the test group, then live in one deploy (Taras)
+- `decision-announcements-in-one-message.md` — [phase 5, 7, 8] — squad, draw and close messages aren't chunked; only tag messages are
+- `decision-stats-all-time-only.md` — [phase 9] — /stats counts all time, one number per row; no month (Taras)
 
 ## Workarounds
 - `workaround-phase-5-runs-on-feat-mvp.md` — [phase 5] — no branch held phases 1 and 4; feat/mvp takes in PR A

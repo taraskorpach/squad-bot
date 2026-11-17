@@ -13,6 +13,7 @@ export type RoomStub = ReturnType<typeof freshRoom>;
 
 export interface RoomSeams {
 	clock?: () => number;
+	random?: () => number;
 }
 
 /**
@@ -27,6 +28,7 @@ export async function roomWith(
 	await runInDurableObject(stub, (room: ChatRoom, state) => {
 		room.features = features;
 		if (seams.clock) room.clock = seams.clock;
+		if (seams.random) room.random = seams.random;
 		state.storage.sql.exec('CREATE TABLE notes (update_id INTEGER NOT NULL, text TEXT NOT NULL)');
 	});
 	return stub;
