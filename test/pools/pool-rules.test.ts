@@ -1,0 +1,120 @@
+import { describe, expect, it } from 'vitest';
+import { type Answer, answer, lineupOf } from '../../src/pools/pool-rules';
+
+const play = (userId: number, rank: number, answeredAt = rank): Answer => ({
+	userId,
+	choice: 'play',
+	rank,
+	answeredAt,
+});
+const pass = (userId: number, answeredAt: number, rank = 0): Answer => ({
+	userId,
+	choice: 'pass',
+	rank,
+	answeredAt,
+});
+
+describe('lineupOf', () => {
+	it('seats plays by rank, benches the rest, lists passes by when they came and the silent', () => {
+		const answers = [play(3, 5), play(1, 1), pass(7, 20), play(2, 2), pass(6, 10), play(4, 9)];
+
+		expect(lineupOf(3, answers, [1, 2, 3, 4, 5, 6, 7, 8])).toEqual({
+			players: [1, 2, 3],
+			bench: [4],
+			passed: [6, 7],
+			unanswered: [5, 8],
+		});
+	});
+
+	it('leaves the bench empty while seats are free', () => {
+		expect(lineupOf(5, [play(1, 1)], [1, 2])).toEqual({
+			players: [1],
+			bench: [],
+			passed: [],
+			unanswered: [2],
+		});
+	});
+});
+
+describe('answer', () => {
+	const pool = { size: 2, squadAnnounced: false };
+
+	it('seats a newcomer at the end of the line while a seat is free', () => {
+		expect(answer(pool, [play(1, 1)], 2, 'play', 50)).toEqual({
+			write: play(2, 2, 50),
+			outcome: 'squad',
+			movedUp: [],
+			squadCompleted: true,
+		});
+	});
+
+	it('benches a newcomer once the squad is full, and says where on the bench', () => {
+		const full = { size: 2, squadAnnounced: true };
+
+		expect(answer(full, [play(1, 1), play(2, 2), play(3, 3)], 4, 'play', 60)).toEqual({
+			write: play(4, 4, 60),
+			outcome: 'bench',
+			benchPlace: 2,
+			movedUp: [],
+			squadCompleted: false,
+		});
+	});
+
+	it('sends someone who passed and comes back to the end of the line', () => {
+		const answers = [play(1, 1), pass(2, 5, 2), play(3, 3)];
+
+		expect(answer(pool, answers, 2, 'play', 70)).toMatchObject({
+			write: play(2, 4, 70),
+			outcome: 'bench',
+			benchPlace: 1,
+		});
+	});
+
+	it('changes nothing for the same answer twice', () => {
+		expect(answer(pool, [play(1, 1)], 1, 'play', 80)).toEqual({
+			outcome: 'already-in',
+			movedUp: [],
+			squadCompleted: false,
+		});
+		expect(answer(pool, [pass(2, 5)], 2, 'pass', 80)).toEqual({
+			outcome: 'already-passed',
+			movedUp: [],
+			squadCompleted: false,
+		});
+	});
+
+	it('moves the bench head up when a player passes, and leaves the passer out of it', () => {
+		const full = { size: 2, squadAnnounced: true };
+		const answers = [play(1, 1), play(2, 2), play(3, 3), play(4, 4)];
+
+		expect(answer(full, answers, 1, 'pass', 90)).toEqual({
+			write: pass(1, 90, 1),
+			outcome: 'passed',
+			movedUp: [3],
+			squadCompleted: false,
+		});
+	});
+
+	it('moves nobody when a bench member passes', () => {
+		const full = { size: 2, squadAnnounced: true };
+		const answers = [play(1, 1), play(2, 2), play(3, 3), play(4, 4)];
+
+		expect(answer(full, answers, 3, 'pass', 90).movedUp).toEqual([]);
+	});
+
+	it('takes a pass from someone who never answered', () => {
+		expect(answer(pool, [play(1, 1)], 5, 'pass', 95)).toEqual({
+			write: pass(5, 95),
+			outcome: 'passed',
+			movedUp: [],
+			squadCompleted: false,
+		});
+	});
+
+	it('completes the squad only the first time it fills', () => {
+		const refilled = { size: 2, squadAnnounced: true };
+
+		expect(answer(pool, [play(1, 1)], 2, 'play', 99).squadCompleted).toBe(true);
+		expect(answer(refilled, [play(1, 1), pass(2, 5, 2)], 3, 'play', 99).squadCompleted).toBe(false);
+	});
+});
