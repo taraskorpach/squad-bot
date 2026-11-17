@@ -1,5 +1,64 @@
 import { describe, expect, it } from 'vitest';
-import { type Answer, answer, closingTime, joinTarget, lineupOf } from '../../src/pools/pool-rules';
+import {
+	type Answer,
+	answer,
+	closingTime,
+	draw,
+	drawRefusal,
+	joinTarget,
+	lineupOf,
+} from '../../src/pools/pool-rules';
+
+describe('draw', () => {
+	const plays = [1, 2, 3, 4, 5, 6].map((userId) => ({
+		userId,
+		choice: 'play' as const,
+		rank: userId,
+		answeredAt: userId,
+	}));
+
+	it('keeps the line as it was when every pick takes the first in line', () => {
+		expect(draw(5, plays, () => 0)).toMatchObject({ squad: [1, 2, 3, 4, 5], bench: [6] });
+	});
+
+	it('puts the drawn first and the rest after, each in the order they joined', () => {
+		const result = draw(5, plays, () => 0.99);
+
+		expect(result.squad).toEqual([2, 3, 4, 5, 6]);
+		expect(result.bench).toEqual([1]);
+		expect(result.answers.map(({ userId, rank }) => [userId, rank])).toEqual([
+			[2, 1],
+			[3, 2],
+			[4, 3],
+			[5, 4],
+			[6, 5],
+			[1, 6],
+		]);
+	});
+
+	it('draws among plays only, and leaves passes as they were', () => {
+		const answers = [
+			...plays.slice(0, 3),
+			{ userId: 9, choice: 'pass' as const, rank: 0, answeredAt: 9 },
+		];
+
+		expect(draw(2, answers, () => 0).answers.map(({ userId }) => userId)).toEqual([1, 2, 3]);
+	});
+});
+
+describe('drawRefusal', () => {
+	const lineup = { players: [1, 2], bench: [3], passed: [4], unanswered: [5] };
+
+	it.each([
+		['used, once the draw happened', true, lineup, 1, 'used'],
+		['not playing, for someone who passed', false, lineup, 4, 'not-playing'],
+		['not playing, for someone who never answered', false, lineup, 5, 'not-playing'],
+		['bench-empty, with nobody to swap', false, { ...lineup, bench: [] }, 1, 'bench-empty'],
+		['none, for a player while the bench waits', false, lineup, 3, undefined],
+	] as const)('is %s', (_case, drawn, shown, userId, refusal) => {
+		expect(drawRefusal(drawn, shown, userId)).toBe(refusal);
+	});
+});
 
 describe('joinTarget', () => {
 	it.each([

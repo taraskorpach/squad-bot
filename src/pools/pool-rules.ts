@@ -31,6 +31,16 @@ export type AnswerDecision = Placement & {
 	squadCompleted: boolean;
 };
 
+export interface DrawResult {
+	/** Every play renumbered: the drawn squad first, then the rest, each in the order they joined. */
+	answers: Answer[];
+	squad: number[];
+	bench: number[];
+}
+
+/** Why 🎲 changes nothing: it was used, the one pressing isn't playing, or nobody sits out. */
+export type DrawRefusal = 'used' | 'not-playing' | 'bench-empty';
+
 /** What `/join` joins: the pool its reply points at, or else the newest open one. */
 export type JoinTarget = { kind: 'pool'; poolId: number } | { kind: 'closed' } | { kind: 'none' };
 
@@ -113,6 +123,39 @@ export function joinTarget(
 	if (replied)
 		return replied.status === 'open' ? { kind: 'pool', poolId: replied.id } : { kind: 'closed' };
 	return newestOpen ? { kind: 'pool', poolId: newestOpen.id } : { kind: 'none' };
+}
+
+/**
+ * The one-time draw: `size` players picked uniformly at random from everyone playing, with
+ * `random` in [0, 1). A draw of 6 for 5 keeps the same squad 1 time in 6.
+ */
+export function draw(size: number, answers: readonly Answer[], random: () => number): DrawResult {
+	const plays = answers.filter((given) => given.choice === 'play').sort((a, b) => a.rank - b.rank);
+	const remaining = plays.map((given) => given.userId);
+	const picked = new Set<number>();
+	while (picked.size < size && remaining.length > 0) {
+		const [chosen] = remaining.splice(Math.floor(random() * remaining.length), 1);
+		if (chosen !== undefined) picked.add(chosen);
+	}
+	const squad = plays.filter((given) => picked.has(given.userId));
+	const bench = plays.filter((given) => !picked.has(given.userId));
+	return {
+		answers: [...squad, ...bench].map((given, index) => ({ ...given, rank: index + 1 })),
+		squad: squad.map((given) => given.userId),
+		bench: bench.map((given) => given.userId),
+	};
+}
+
+/** Only someone playing may draw, once, and only while someone sits on the bench. */
+export function drawRefusal(
+	drawn: boolean,
+	lineup: { readonly players: readonly number[]; readonly bench: readonly number[] },
+	userId: number,
+): DrawRefusal | undefined {
+	if (drawn) return 'used';
+	if (![...lineup.players, ...lineup.bench].includes(userId)) return 'not-playing';
+	if (lineup.bench.length === 0) return 'bench-empty';
+	return undefined;
 }
 
 function placeOf(choice: Choice, userId: number, after: Lineup): Placement {
