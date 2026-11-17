@@ -41,7 +41,7 @@ The production bot is **not** added to the friends' chat here: that is phase 5.
 - [ ] Cloudflare account on the Free plan, no card, with its workers.dev subdomain and `wrangler login` done on Taras's machine (evidence: account id and subdomain)
 - [ ] Production bot created in @BotFather, token stored outside the repo (evidence: @username)
 - [ ] Dev bot created and added to a test group of at least two accounts (evidence: @username)
-- [ ] `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` saved as GitHub Actions secrets (evidence: date)
+- [x] `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` saved as GitHub Actions secrets (evidence: date) — gh secret list: CLOUDFLARE_API_TOKEN 2026-11-16T17:12:38Z, CLOUDFLARE_ACCOUNT_ID 2026-11-16T17:12:55Z
 
 ## Phase-local notes
 
