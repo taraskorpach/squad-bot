@@ -13,6 +13,28 @@ export interface StatEvent {
 	at: number;
 }
 
+/**
+ * Whether the same person has an event of the same kind less than `windowMs` before or after
+ * `event.at`: either way, so one delivered late is judged by when it was sent.
+ */
+export function hasEventNear(
+	sql: SqlStorage,
+	event: Pick<StatEvent, 'kind' | 'userId' | 'at'>,
+	windowMs: number,
+): boolean {
+	return (
+		sql
+			.exec(
+				'SELECT 1 FROM events WHERE kind = ? AND user_id = ? AND at > ? AND at < ? LIMIT 1',
+				event.kind,
+				event.userId,
+				event.at - windowMs,
+				event.at + windowMs,
+			)
+			.toArray().length > 0
+	);
+}
+
 /** The one writer of the append-only record: every event stays, repeats included. */
 export function recordEvent(sql: SqlStorage, event: StatEvent): void {
 	sql.exec(
