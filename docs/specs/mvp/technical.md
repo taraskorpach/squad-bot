@@ -308,6 +308,9 @@ The side effects shared by callbacks, `/join` and timers. They are written again
 - `openPool(room, request)` commits the pool, the author's answer and the `pool_open` and `join` events, then calls `postCard`.
 - `applyAnswer(room, poolId, userId, choice, at)` commits the answer and its event, and the squad's flag the first time it fills. It returns the decision: the outcome for the toast, the move-ups, and whether the squad just completed. For a closed or missing pool it returns that instead.
 - `showAnswer(room, poolId, decision)` refreshes the card, then posts the squad's message and each move-up under it.
+- `commitDraw(room, poolId, userId)` and `showDraw` (phase 7): the draw and the renumbered line in one commit, checked as stored; then the card and the draw's message.
+- `closePool(room, poolId, by)` is `commitClose` (only an open pool, `closed_by` set) then `showClose`. `showClose` turns the card final, and for the author tags the others who said Граю. The ✖️ tap answers its toast between the two halves.
+- The tap handler dispatches through a `Record` of every pool action, so a new button can't go unhandled. 🔔 runs in the handler, since it needs `ctx.room.throttle` and commits nothing.
 - In `pool-card.ts`:
   - `cardState(sql, poolId)` reads what a card shows: the pool, its lineup, and everyone on it, leavers included.
   - `refreshCard(room, poolId)` renders the card and edits it when it changed.
@@ -365,6 +368,8 @@ The side effects shared by callbacks, `/join` and timers. They are written again
 - **Group limit.** Telegram allows a bot 20 messages a minute in a group (wave 0 §5).
   - `/all` tags at most once per 30 s, and 🔔 at most once per 30 s per pool. Every `/all` is still counted, and a repeat is answered with 👌 or a toast.
   - The window's last time is kept in memory. An evicted object has been idle for over a minute, so a lost value can only mean the window has passed.
+  - The window is `TAG_WINDOW_MS` in `src/telegram.ts`. Its keys are `all`, and `ping:{poolId}` for each pool.
+  - Only the tag messages chunk their mentions by `MENTION_CHUNK`: `/all`, a pool's opening, 🔔. The squad, draw and close announcements are one message each (ledger: `decision-announcements-in-one-message.md`).
 
 ## Configuration
 

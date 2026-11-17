@@ -37,10 +37,10 @@ pr: B
 
 ## Deliverables
 
-- [ ] 🔔: tags the members who haven't answered, chunked, as a reply to the card, at most once per 30 s per pool; a toast with the count, or its own toast for a repeat or when everyone has answered; the button shows only while someone hasn't answered
-- [ ] 🎲 (pure draw plus handler): shown only while plays exceed seats and before use, pressable only by players of that pool; renumbers the lineup, posts the whole squad and the whole bench, and the card notes the draw; an outdated 🎲 with nobody on the bench gets its toast
-- [ ] ✖️: only the author closes, through `closePool` in `pool-actions.ts`; the card turns final with "закрито автором"; everyone else who said Граю is tagged
-- [ ] `/pools`: open pools with time, fill, bench count and a link to each card (none while a pool has no card); the empty-state reply
+- [x] 🔔: tags the members who haven't answered, chunked, as a reply to the card, at most once per 30 s per pool; a toast with the count, or its own toast for a repeat or when everyone has answered; the button shows only while someone hasn't answered
+- [x] 🎲 (pure draw plus handler): shown only while plays exceed seats and before use, pressable only by players of that pool; renumbers the lineup, posts the whole squad and the whole bench, and the card notes the draw; an outdated 🎲 with nobody on the bench gets its toast
+- [x] ✖️: only the author closes, through `closePool` in `pool-actions.ts`; the card turns final with "закрито автором"; everyone else who said Граю is tagged
+- [x] `/pools`: open pools with time, fill, bench count and a link to each card (none while a pool has no card); the empty-state reply
 
 ## Phase-local notes
 

@@ -22,11 +22,11 @@ needs to know exist to navigate the code — not every file that's touched.
 | `src/members/all-handlers.ts` | `/all` | phase 3 |
 | `src/stats/event-store.ts` | `EventKind` and `recordEvent`, the one writer of the append-only record; pool events carry their `pool_id` | phases 3, 6 |
 | `src/kyiv-time.ts` | The one place Kyiv is named: a wall time's occurrences around a moment (DST-safe), calendar days between two instants, `21:00` and `16.11` | phase 6 |
-| `src/pools/pool-args.ts`, `src/pools/pool-rules.ts` | Pure: `/pool`'s arguments and `startOf`; `lineupOf`, `answer` (row, outcome, move-ups, squad completed), `closingTime`, `joinTarget` | phase 6 |
-| `src/pools/pool-format.ts`, `src/pools/pool-keyboards.ts`, `src/pools/pool-messages.ts` | Pure: the card (deterministic); the buttons and the `p:{pool}:{action}` codec; replies, the opening message, toasts, the squad's and move-up messages | phase 6 |
-| `src/pools/pool-store.ts` | The pools' SQL and the `Pool` record; `adoptCard` | phase 6 |
-| `src/pools/pool-actions.ts`, `src/pools/pool-card.ts` | Against `RoomAccess`: `openPool`, `applyAnswer`, `showAnswer`; `cardState`, `postCard`, `refreshCard` (edits only a changed render), `postUnderCard` | phase 6 |
-| `src/pools/pool-handlers.ts`, `src/pools/pool-callbacks.ts` | `/pool` and `/join`; ✅ and ❌ taps, every one answered | phase 6 |
+| `src/pools/pool-args.ts`, `src/pools/pool-rules.ts` | Pure: `/pool`'s arguments and `startOf`; `lineupOf`, `answer` (row, outcome, move-ups, squad completed), `closingTime`, `joinTarget`, `draw`, `drawRefusal` | phases 6, 7 |
+| `src/pools/pool-format.ts`, `src/pools/pool-keyboards.ts`, `src/pools/pool-messages.ts` | Pure: the card (deterministic, with the draw's note); the buttons as the lineup allows them and the `p:{pool}:{action}` codec; replies, the opening and 🔔 messages, toasts, the squad's, move-up, draw and close messages, the `/pools` list | phases 6, 7 |
+| `src/pools/pool-store.ts` | The pools' SQL and the `Pool` record; `adoptCard`, `saveDraw`, `closeOpenPool`, `openPools` | phases 6, 7 |
+| `src/pools/pool-actions.ts`, `src/pools/pool-card.ts` | Against `RoomAccess`: `openPool`, `applyAnswer`/`showAnswer`, `commitDraw`/`showDraw`, `closePool` (`commitClose`/`showClose`, for phase 8 too); `cardState`, `postCard`, `refreshCard` (edits only a changed render), `postUnderCard` | phases 6, 7 |
+| `src/pools/pool-handlers.ts`, `src/pools/pool-callbacks.ts` | `/pool`, `/join` and `/pools`; every button's tap, through a `Record` of the actions, every one answered | phases 6, 7 |
 | `src/texts.ts`, `src/welcome.ts` | The bot's Ukrainian (with `commandMenu`) and `compareNames`; `welcomeMessage({ isAdmin })`, which the setup script imports under Node (`.ts` imports, leaves only) | phases 3, 4 |
 | `scripts/telegram-setup.ts` | The setup script's decisions, tested in workerd: `COMMAND_MENU`, `groupsIn`, `webhookSettings`, `deliveryError`, `probeRequest`, `probeProblem` | phase 4 |
 | `scripts/configure-telegram.ts`, `scripts/tsconfig.json` | The Node shell (`discover`, `webhook`, `welcome`); nothing imports it. Typed with `nodenext` and `erasableSyntaxOnly`; `check` runs its `--help` under Node | phase 4 |
