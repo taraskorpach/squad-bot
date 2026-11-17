@@ -39,6 +39,29 @@ export function hasEventNear(
 	);
 }
 
+type EventAboutRow = { user_id: number; message_id: number | null; at: number };
+
+/**
+ * The first event of `kind` about `ref`, or none yet. First means first recorded: a баян names
+ * whoever the bot counted first, even if a late message was sent before theirs.
+ */
+export function firstEventAbout(
+	sql: SqlStorage,
+	kind: EventKind,
+	ref: string,
+): StatEvent | undefined {
+	const [row] = sql
+		.exec<EventAboutRow>(
+			'SELECT user_id, message_id, at FROM events WHERE kind = ? AND ref = ? ORDER BY id LIMIT 1',
+			kind,
+			ref,
+		)
+		.toArray();
+	if (!row) return undefined;
+	const event: StatEvent = { kind, ref, userId: row.user_id, at: row.at };
+	return row.message_id === null ? event : { ...event, messageId: row.message_id };
+}
+
 /** The one writer of the append-only record: every event stays, repeats included. */
 export function recordEvent(sql: SqlStorage, event: StatEvent): void {
 	sql.exec(
