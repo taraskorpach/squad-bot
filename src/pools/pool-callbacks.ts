@@ -22,6 +22,7 @@ type TapContext = Filter<BotContext, 'callback_query:data'>;
 // A Record, so a new button can't be added without saying what its tap does.
 const ON_TAP: Record<PoolAction, (ctx: TapContext, poolId: number) => Promise<void>> = {
 	in: (ctx, poolId) => answerTap(ctx, poolId, 'play'),
+	maybe: (ctx, poolId) => answerTap(ctx, poolId, 'maybe'),
 	out: (ctx, poolId) => answerTap(ctx, poolId, 'pass'),
 	ping: pingTap,
 	draw: drawTap,

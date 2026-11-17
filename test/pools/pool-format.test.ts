@@ -35,6 +35,7 @@ const pool: Pool = {
 const lineup = (fields: Partial<Lineup>): Lineup => ({
 	players: [],
 	bench: [],
+	maybe: [],
 	passed: [],
 	unanswered: [],
 	...fields,
@@ -172,5 +173,19 @@ describe('renderCard without a seat limit', () => {
 		const [header] = renderCard(closed, shown, NAMES, kyiv(17, 1)).text.split('\n');
 
 		expect(header).toBe('🎮 Мафія · без ліміту · 16.11 о 21:00');
+	});
+});
+
+describe('renderCard with maybes', () => {
+	it('lists them after the bench and before the passes, in the order they came', () => {
+		const shown = lineup({ players: [1, 2, 3], maybe: [4, 5], passed: [7], unanswered: [6] });
+		const lines = renderCard(pool, shown, NAMES, kyiv(16, 19)).text.split('\n').slice(3);
+
+		expect(lines).toEqual([
+			'✅ Грають (3/5): Тарас, Олег, Андрій',
+			'🤷 Може: Ігор, Макс',
+			'❌ Пас: Саша',
+			'⏳ Ще не відповіли: Діма',
+		]);
 	});
 });

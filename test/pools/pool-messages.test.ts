@@ -228,3 +228,16 @@ describe('a pool without a seat limit', () => {
 		);
 	});
 });
+
+describe('a maybe', () => {
+	it('is told it was heard, and that it already was', () => {
+		expect(toastOf({ outcome: 'maybe' })).toBe('Може 🤷');
+		expect(toastOf({ outcome: 'already-maybe' })).toBe('Ти вже на «може»');
+	});
+
+	it('is asked at the start, in a line of its own after the players', () => {
+		expect(startPingText('CS2', ['m1', 'm2', 'm3'], 3, 5, ['q1', 'q2'])).toBe(
+			'⏰ CS2 — час! m1, m2, m3 (3/5)\n🤷 q1, q2, ви з нами?',
+		);
+	});
+});

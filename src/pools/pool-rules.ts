@@ -1,11 +1,12 @@
 // Who plays, who waits and who passed, decided without storage or Telegram: the actions apply it.
 
-export type Choice = 'play' | 'pass';
+/** Граю, Пас, or 🤷 ±: a maybe, which holds no seat. */
+export type Choice = 'play' | 'pass' | 'maybe';
 
 export interface Answer {
 	userId: number;
 	choice: Choice;
-	/** Place in line among plays: the lower, the sooner seated. A pass keeps its last one. */
+	/** Place in line among plays: the lower, the sooner seated. A pass or a maybe keeps its last one. */
 	rank: number;
 	answeredAt: number;
 }
@@ -13,14 +14,20 @@ export interface Answer {
 export interface Lineup {
 	players: number[];
 	bench: number[];
+	maybe: number[];
 	passed: number[];
 	unanswered: number[];
 }
 
 /** Where an answer left the person; on the bench, also where in its line, counting from 1. */
 export type Placement =
-	| { outcome: 'squad' | 'passed' | 'already-in' | 'already-passed' }
+	| {
+			outcome: 'squad' | 'maybe' | 'passed' | 'already-in' | 'already-maybe' | 'already-passed';
+	  }
 	| { outcome: 'bench'; benchPlace: number };
+
+/** What repeating an answer says. */
+const ALREADY = { play: 'already-in', maybe: 'already-maybe', pass: 'already-passed' } as const;
 
 export type AnswerDecision = Placement & {
 	/** The person's new answer, or none when it repeats the one they gave. */
@@ -59,8 +66,8 @@ export function closingTime(openedAt: number, startsAt: number | undefined): num
 
 /**
  * Plays in rank order: the first `size` are the squad, the rest wait on the bench; with no size,
- * every play is in the squad. Passes in the order they came. The unanswered are the members in
- * the chat who haven't answered.
+ * every play is in the squad. Maybes and passes in the order they came. The unanswered are the
+ * members in the chat who haven't answered.
  */
 export function lineupOf(
 	size: number | undefined,
@@ -71,23 +78,26 @@ export function lineupOf(
 		.filter((given) => given.choice === 'play')
 		.sort((a, b) => a.rank - b.rank)
 		.map((given) => given.userId);
-	const passed = answers
-		.filter((given) => given.choice === 'pass')
-		.sort((a, b) => a.answeredAt - b.answeredAt)
-		.map((given) => given.userId);
+	const inTheOrderCame = (choice: Choice): number[] =>
+		answers
+			.filter((given) => given.choice === choice)
+			.sort((a, b) => a.answeredAt - b.answeredAt)
+			.map((given) => given.userId);
 	const answered = new Set(answers.map((given) => given.userId));
 	const seats = size ?? plays.length;
 	return {
 		players: plays.slice(0, seats),
 		bench: plays.slice(seats),
-		passed,
+		maybe: inTheOrderCame('maybe'),
+		passed: inTheOrderCame('pass'),
 		unanswered: inChat.filter((id) => !answered.has(id)),
 	};
 }
 
 /**
- * A person's Граю or Пас. Граю from anyone not playing goes to the end of the line; Пас takes them
- * out of it, and the bench head takes a freed seat. The same answer twice changes nothing.
+ * A person's Граю, 🤷 ± or Пас. Граю from anyone not playing goes to the end of the line; a maybe
+ * or a pass takes them out of it, and the bench head takes a freed seat. The same answer twice
+ * changes nothing.
  */
 export function answer(
 	seats: Seats,
@@ -98,8 +108,7 @@ export function answer(
 ): AnswerDecision {
 	const current = answers.find((given) => given.userId === userId);
 	if (current?.choice === choice) {
-		const outcome = choice === 'play' ? 'already-in' : 'already-passed';
-		return { outcome, movedUp: [], squadCompleted: false };
+		return { outcome: ALREADY[choice], movedUp: [], squadCompleted: false };
 	}
 	const rank = choice === 'play' ? nextRank(answers) : (current?.rank ?? 0);
 	const write: Answer = { userId, choice, rank, answeredAt: now };
@@ -170,6 +179,7 @@ export function drawRefusal(
 
 function placeOf(choice: Choice, userId: number, after: Lineup): Placement {
 	if (choice === 'pass') return { outcome: 'passed' };
+	if (choice === 'maybe') return { outcome: 'maybe' };
 	const benchIndex = after.bench.indexOf(userId);
 	if (benchIndex === -1) return { outcome: 'squad' };
 	return { outcome: 'bench', benchPlace: benchIndex + 1 };

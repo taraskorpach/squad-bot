@@ -110,6 +110,7 @@ describe('lineupOf', () => {
 		expect(lineupOf(3, answers, [1, 2, 3, 4, 5, 6, 7, 8])).toEqual({
 			players: [1, 2, 3],
 			bench: [4],
+			maybe: [],
 			passed: [6, 7],
 			unanswered: [5, 8],
 		});
@@ -119,6 +120,7 @@ describe('lineupOf', () => {
 		expect(lineupOf(5, [play(1, 1)], [1, 2])).toEqual({
 			players: [1],
 			bench: [],
+			maybe: [],
 			passed: [],
 			unanswered: [2],
 		});
@@ -215,6 +217,7 @@ describe('a pool without a seat limit', () => {
 		expect(lineupOf(undefined, answers, [1, 2, 3, 4, 5])).toEqual({
 			players: [1, 2, 4],
 			bench: [],
+			maybe: [],
 			passed: [3],
 			unanswered: [5],
 		});
@@ -231,5 +234,54 @@ describe('a pool without a seat limit', () => {
 
 	it('draws everyone into the squad', () => {
 		expect(draw(undefined, answers, () => 0)).toMatchObject({ squad: [1, 2, 4], bench: [] });
+	});
+});
+
+describe('a maybe', () => {
+	const maybe = (userId: number, answeredAt: number, rank = 0): Answer => ({
+		userId,
+		choice: 'maybe',
+		rank,
+		answeredAt,
+	});
+
+	it('holds no seat, and is listed in the order it came', () => {
+		const answers = [play(1, 1), maybe(2, 20), play(3, 2), maybe(4, 10), pass(5, 30)];
+
+		expect(lineupOf(2, answers, [1, 2, 3, 4, 5, 6])).toEqual({
+			players: [1, 3],
+			bench: [],
+			maybe: [4, 2],
+			passed: [5],
+			unanswered: [6],
+		});
+	});
+
+	it('takes a player out of the squad, keeping the rank, and the bench head moves up', () => {
+		const pool = { size: 2, squadAnnounced: true };
+
+		expect(answer(pool, [play(1, 1), play(2, 2), play(3, 3)], 1, 'maybe', 50)).toEqual({
+			write: maybe(1, 50, 1),
+			outcome: 'maybe',
+			movedUp: [3],
+			squadCompleted: false,
+		});
+	});
+
+	it('says so when given twice', () => {
+		expect(answer({ size: 2, squadAnnounced: false }, [maybe(1, 10)], 1, 'maybe', 50)).toEqual({
+			outcome: 'already-maybe',
+			movedUp: [],
+			squadCompleted: false,
+		});
+	});
+
+	it('joins the end of the line on Граю', () => {
+		const answers = [play(1, 1), maybe(2, 10)];
+
+		expect(answer({ size: 2, squadAnnounced: false }, answers, 2, 'play', 50)).toMatchObject({
+			write: play(2, 2, 50),
+			outcome: 'squad',
+		});
 	});
 });

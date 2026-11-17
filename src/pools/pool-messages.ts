@@ -28,6 +28,10 @@ export function toastOf(placement: Placement): string {
 			return toasts.alreadyIn;
 		case 'already-passed':
 			return toasts.alreadyPassed;
+		case 'maybe':
+			return toasts.maybe;
+		case 'already-maybe':
+			return toasts.alreadyMaybe;
 	}
 }
 
@@ -103,18 +107,20 @@ export function pingMessages(mentions: readonly string[], chunkSize: number): st
 }
 
 /**
- * At the start time: the players, not the bench, with the fill while the squad is short. A pool
- * without a seat limit is never short.
+ * At the start time: the players, not the bench, with the fill while the squad is short, then the
+ * maybes asked in a line of their own. A pool without a seat limit is never short.
  */
 export function startPingText(
 	game: string,
 	mentions: readonly string[],
 	players: number,
 	size: number | undefined,
+	maybes: readonly string[] = [],
 ): string {
 	const { messages } = texts.pool;
 	const fill = size !== undefined && players < size ? messages.startFill(players, size) : '';
-	return messages.startPing(escapeHtml(game), mentions.join(', ')) + fill;
+	const ask = maybes.length > 0 ? `\n${messages.startMaybe(maybes.join(', '))}` : '';
+	return messages.startPing(escapeHtml(game), mentions.join(', ')) + fill + ask;
 }
 
 /** After 🎲: the whole squad and the whole bench, so the message is never empty. */

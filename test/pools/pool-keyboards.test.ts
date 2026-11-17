@@ -7,7 +7,7 @@ describe('encodePoolAction and decodePoolAction', () => {
 
 		expect(data).toBe('p:12345:close');
 		expect(new TextEncoder().encode(data).byteLength).toBeLessThanOrEqual(64);
-		for (const action of ['in', 'out', 'ping', 'draw', 'close'] as const) {
+		for (const action of ['in', 'maybe', 'out', 'ping', 'draw', 'close'] as const) {
 			expect(decodePoolAction(encodePoolAction(7, action))).toEqual({ poolId: 7, action });
 		}
 	});
@@ -23,6 +23,7 @@ describe('encodePoolAction and decodePoolAction', () => {
 describe('poolKeyboard', () => {
 	const answerRow = [
 		{ text: '✅ Граю', callback_data: 'p:7:in', style: 'success' },
+		{ text: '🤷 ±', callback_data: 'p:7:maybe' },
 		{ text: '❌ Пас', callback_data: 'p:7:out', style: 'danger' },
 	];
 	const draw = { text: '🎲 Жереб', callback_data: 'p:7:draw' };
@@ -41,7 +42,7 @@ describe('poolKeyboard', () => {
 			{ bench: [], unanswered: [] },
 			[close],
 		],
-	])('gives an open card Граю and Пас, then %s', (_case, card, lineup, extras) => {
+	])('gives an open card Граю, ± and Пас, then %s', (_case, card, lineup, extras) => {
 		expect(poolKeyboard(card, lineup)).toEqual({ inline_keyboard: [answerRow, extras] });
 	});
 });

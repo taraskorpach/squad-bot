@@ -78,7 +78,14 @@ async function startPing(room: RoomAccess, pool: Pool, now: number): Promise<boo
 	});
 	const players = state?.lineup.players ?? [];
 	if (!state || players.length === 0 || now - (pool.startsAt ?? now) > PING_LATE_MS) return true;
-	const text = startPingText(pool.game, mentionsIn(state, players), players.length, pool.size);
+	const maybes = mentionsIn(state, state.lineup.maybe);
+	const text = startPingText(
+		pool.game,
+		mentionsIn(state, players),
+		players.length,
+		pool.size,
+		maybes,
+	);
 	const sent = await postUnderCard(room, pool.id, pool.messageId, text);
 	// Not sent: the flag goes back, so the retry pings.
 	if (!sent) room.write((sql) => markStartPinged(sql, pool.id, false));

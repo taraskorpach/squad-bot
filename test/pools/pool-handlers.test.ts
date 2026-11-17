@@ -73,6 +73,7 @@ describe('/pool', () => {
 					inline_keyboard: [
 						[
 							{ text: '✅ Граю', callback_data: `p:${pool?.id}:in`, style: 'success' },
+							{ text: '🤷 ±', callback_data: `p:${pool?.id}:maybe` },
 							{ text: '❌ Пас', callback_data: `p:${pool?.id}:out`, style: 'danger' },
 						],
 						[

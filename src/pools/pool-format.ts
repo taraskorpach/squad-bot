@@ -68,6 +68,7 @@ function answerLines(pool: Pool, lineup: Lineup, nameOf: (id: number) => string)
 	return [
 		open ? card.players(lineup.players.length, pool.size, players) : card.played(players),
 		...lineFor(lineup.bench, card.bench),
+		...lineFor(lineup.maybe, card.maybe),
 		...lineFor(lineup.passed, card.passed),
 		...(open ? lineFor(silent, card.unanswered) : []),
 	];
