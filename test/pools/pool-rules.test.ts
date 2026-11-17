@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { type Answer, answer, lineupOf } from '../../src/pools/pool-rules';
+import { type Answer, answer, closingTime, lineupOf } from '../../src/pools/pool-rules';
+
+describe('closingTime', () => {
+	const HOUR = 60 * 60 * 1000;
+
+	it('is three hours after the start, or after the opening for a pool now', () => {
+		expect(closingTime(1_000, 5 * HOUR)).toBe(8 * HOUR);
+		expect(closingTime(1_000, undefined)).toBe(1_000 + 3 * HOUR);
+	});
+});
 
 const play = (userId: number, rank: number, answeredAt = rank): Answer => ({
 	userId,

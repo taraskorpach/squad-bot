@@ -36,6 +36,13 @@ export interface Seats {
 	squadAnnounced: boolean;
 }
 
+/** A pool closes by itself this long after its start, or after it opened for a pool now. */
+const LIFETIME_MS = 3 * 60 * 60 * 1000;
+
+export function closingTime(openedAt: number, startsAt: number | undefined): number {
+	return (startsAt ?? openedAt) + LIFETIME_MS;
+}
+
 /**
  * Plays in rank order: the first `size` are the squad, the rest wait on the bench. Passes in the
  * order they came. The unanswered are the members in the chat who haven't answered.
