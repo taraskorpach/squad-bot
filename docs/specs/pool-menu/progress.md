@@ -14,4 +14,4 @@
 ## Phases
 
 - [x] Phase 1 — Pools without a seat limit → `phases/phase-1-unlimited-pools.md` · deployed 2026-11-17
-- [x] Phase 2 — The pool menu → `phases/phase-2-pool-menu.md`
+- [x] Phase 2 — The pool menu → `phases/phase-2-pool-menu.md` · deployed 2026-11-17
