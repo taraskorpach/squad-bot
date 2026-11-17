@@ -5,11 +5,11 @@ gate: outward
 shape: cutover-and-runbook
 ---
 
-# Phase 5 — Go live with /all
+# Phase 5 — Go live with /all, pools and stats
 
-**Goal:** The bot runs in the friends' chat: it hears every command, knows all seven members, `/all` works, and the old tag bot is gone.
+**Goal:** The bot runs in the friends' chat: it hears every command, knows all seven members, `/all`, pools and `/stats` work, and the old tag bot is gone. PRs A, B and C go live together (`ledger/decision-release-all-at-once.md`).
 
-**Outcome:** The chat switches to the new bot for tagging. Free. Risk: for a few minutes both bots answer `/all`, and the welcome is one extra message.
+**Outcome:** The chat switches to the new bot for tagging, pools and stats at once. Free. Risk: for a few minutes both bots answer /all, and the welcome is one extra message.
 
 **Files to touch:**
 - none; a changed `MENTION_CHUNK` goes into the next code PR (see the mention test)
@@ -41,10 +41,10 @@ after a day of use (wave 2 §2: 10 ms per request on Free, never measured for gr
 
 ## Deliverables
 
-- [ ] Gate: Taras agrees to go live in the chat
+- [x] Gate: Taras agrees to go live in the chat — Taras in the session, 2026-11-17 13:30: «Далі давай додавати в чат», after trying A, B and C in Pisikcs Test
 - [ ] Bot added to the chat as an admin with only the pin right; the supergroup's id found with `discover` (evidence: date and the chat type)
 - [ ] Production secrets set before PR A merges: `BOT_TOKEN`, `WEBHOOK_SECRET` (the same value in `.prod.vars`), `ALLOWED_CHAT_ID`, `BOT_INFO` (evidence: date)
-- [ ] PR A merged and its deploy workflow green; phase 4 marked deployed (evidence: the workflow run)
+- [ ] PRs A, B and C merged at once (#2 into PR A's branch, then #1 into main) and the deploy workflow green; phases 2–4 and 6–9 marked deployed (evidence: the workflow run)
 - [ ] Webhook set and the command menu visible in the chat (evidence: date)
 - [ ] Welcome posted and all seven members known (evidence: an `/all` that tags six)
 - [ ] Mention test done and `MENTION_CHUNK` settled (evidence: who was notified, the value)
@@ -53,5 +53,5 @@ after a day of use (wave 2 §2: 10 ms per request on Free, never measured for gr
 
 ## Phase-local notes
 
-- If requests run over 10 ms CPU, record it in the ledger before PR B: the pool card is the heaviest render.
+- If requests run over 10 ms CPU, record it in the ledger: the pool card is the heaviest render, and it is live from the start.
 - The welcome must go out after the webhook is set, or 👋 taps reach nobody.

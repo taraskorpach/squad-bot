@@ -30,6 +30,7 @@ Warm cache for forward-propagating learnings. One row per ledger entry with its
 - `decision-one-bot.md` — [phase 2+] — one bot for chat and tests; a local tunnel takes it out of the chat
 - `decision-tag-window.md` — [phase 3, 7] — /all and 🔔 tag at most once per 30 s; every /all counts (Taras)
 - `decision-event-time-is-when-the-person-acted.md` — [phase 6, 9] — an event's at is its message's date for a command, the clock for a tap
+- `decision-release-all-at-once.md` — [phase 5] — A, B and C tried in the test group, then live in one deploy (Taras)
 
 ## Workarounds
 - `workaround-phase-5-runs-on-feat-mvp.md` — [phase 5] — no branch held phases 1 and 4; feat/mvp takes in PR A
