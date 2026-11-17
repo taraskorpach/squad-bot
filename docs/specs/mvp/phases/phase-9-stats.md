@@ -32,10 +32,10 @@ pr: C
 
 ## Deliverables
 
-- [ ] Stats windows (pure, in `src/kyiv-time.ts`): the current Kyiv month as a UTC range, right across DST changes
-- [ ] Leaderboard queries: per-person counts for the five kinds, this month and all time, with `join`, `pass` and `pool_open` counted once per pool and person by their first event; total joins as distinct pool-and-person pairs
-- [ ] Leaderboard format (pure): the header with the month's Ukrainian name, five boards, sorting, empty boards
-- [ ] `/stats`: replies with the boards
+- [x] Stats windows (pure, in `src/kyiv-time.ts`): the current Kyiv month as a UTC range, right across DST changes
+- [x] Leaderboard queries: per-person counts for the five kinds, this month and all time, with `join`, `pass` and `pool_open` counted once per pool and person by their first event; total joins as distinct pool-and-person pairs
+- [x] Leaderboard format (pure): the header with the month's Ukrainian name, five boards, sorting, empty boards
+- [x] `/stats`: replies with the boards
 
 ## Phase-local notes
 
