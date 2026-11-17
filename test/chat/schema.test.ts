@@ -101,6 +101,25 @@ describe('the event record', () => {
 	});
 });
 
+describe('the pools', () => {
+	it('start with no timer pending: not pinged, no failed attempt, no retry', async () => {
+		await runInDurableObject(freshRoom(), (_room, state) => {
+			state.storage.sql.exec(
+				'INSERT INTO pools (game, size, author_id, opened_at, closes_at) VALUES (?, 5, 1001, ?, ?)',
+				'CS2',
+				NOW,
+				NOW,
+			);
+
+			expect(
+				state.storage.sql
+					.exec('SELECT start_pinged, timer_attempts, timer_retry_at FROM pools')
+					.toArray(),
+			).toEqual([{ start_pinged: 0, timer_attempts: 0, timer_retry_at: null }]);
+		});
+	});
+});
+
 describe('the object at construction', () => {
 	it.each([
 		['BOT_INFO', 'not json', 'BOT_INFO must be the JSON of getMe'],

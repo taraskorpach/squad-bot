@@ -28,6 +28,8 @@ const pool: Pool = {
 	status: 'open',
 	squadAnnounced: false,
 	drawn: false,
+	startPinged: false,
+	timerAttempts: 0,
 };
 
 const lineup = (fields: Partial<Lineup>): Lineup => ({

@@ -69,6 +69,8 @@ describe('openPoolsText', () => {
 		status: 'open',
 		squadAnnounced: false,
 		drawn: false,
+		startPinged: false,
+		timerAttempts: 0,
 		...fields,
 	});
 

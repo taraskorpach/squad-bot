@@ -18,12 +18,21 @@ export interface Pool {
 	drawn: boolean;
 	/** The last render Telegram accepted, so an unchanged card isn't edited again. */
 	cardRender?: string;
+	/** The players were tagged at the start, or the ping was skipped or given up. */
+	startPinged: boolean;
+	/** How many timer actions in a row have failed for this pool. */
+	timerAttempts: number;
+	/** No timer action of this pool runs before this, after a failure. */
+	timerRetryAt?: number;
 }
 
 export type NewPool = Pick<
 	Pool,
 	'game' | 'size' | 'authorId' | 'openedAt' | 'startsAt' | 'closesAt'
 >;
+
+/** A failed timer action waits this long before each retry; after the last one it is given up. */
+export const TIMER_BACKOFF_MS = [60_000, 120_000, 240_000];
 
 type PoolRow = {
 	id: number;
@@ -39,6 +48,9 @@ type PoolRow = {
 	squad_announced: number;
 	drawn: number;
 	card_render: string | null;
+	start_pinged: number;
+	timer_attempts: number;
+	timer_retry_at: number | null;
 };
 
 type AnswerRow = { user_id: number; choice: Choice; rank: number; answered_at: number };
@@ -136,6 +148,32 @@ export function saveDraw(sql: SqlStorage, poolId: number, plays: readonly Answer
 	sql.exec('UPDATE pools SET drawn = 1 WHERE id = ?', poolId);
 }
 
+export function markStartPinged(sql: SqlStorage, poolId: number, pinged: boolean): void {
+	sql.exec('UPDATE pools SET start_pinged = ? WHERE id = ?', pinged ? 1 : 0, poolId);
+}
+
+/** A timer action of the pool worked: nothing waits for a retry. */
+export function clearTimerRetry(sql: SqlStorage, poolId: number): void {
+	sql.exec('UPDATE pools SET timer_attempts = 0, timer_retry_at = NULL WHERE id = ?', poolId);
+}
+
+/**
+ * A timer action of the pool failed: it waits 1, 2, then 4 minutes. Returns true when that was
+ * the last try, which the caller then gives up.
+ */
+export function recordTimerFailure(sql: SqlStorage, poolId: number, now: number): boolean {
+	const { timer_attempts: attempts } = sql
+		.exec<{ timer_attempts: number }>(
+			'UPDATE pools SET timer_attempts = timer_attempts + 1 WHERE id = ? RETURNING timer_attempts',
+			poolId,
+		)
+		.one();
+	const wait = TIMER_BACKOFF_MS[attempts - 1];
+	const retryAt = wait === undefined ? null : now + wait;
+	sql.exec('UPDATE pools SET timer_retry_at = ? WHERE id = ?', retryAt, poolId);
+	return wait === undefined;
+}
+
 /** Closes a pool that is still open; false when it already was closed. */
 export function closeOpenPool(sql: SqlStorage, poolId: number, by: 'auto' | 'author'): boolean {
 	const closed = sql.exec(
@@ -194,5 +232,8 @@ function poolOf(row: PoolRow): Pool {
 		squadAnnounced: row.squad_announced === 1,
 		drawn: row.drawn === 1,
 		cardRender: row.card_render ?? undefined,
+		startPinged: row.start_pinged === 1,
+		timerAttempts: row.timer_attempts,
+		timerRetryAt: row.timer_retry_at ?? undefined,
 	};
 }

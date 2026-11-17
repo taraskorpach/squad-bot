@@ -90,6 +90,16 @@ export const MIGRATIONS: readonly Migration[] = [
 			);
 		`,
 	},
+	{
+		id: 4,
+		description: "the pools' timers: the start ping, and a failed action's retries",
+		// The pools table is the alarm's schedule: no jobs table, so a closed pool can't fire.
+		sql: `
+			ALTER TABLE pools ADD COLUMN start_pinged   INTEGER NOT NULL DEFAULT 0;
+			ALTER TABLE pools ADD COLUMN timer_attempts INTEGER NOT NULL DEFAULT 0;
+			ALTER TABLE pools ADD COLUMN timer_retry_at INTEGER;
+		`,
+	},
 ];
 
 /** Each migration commits with its own row, so one that fails halfway leaves nothing behind. */
