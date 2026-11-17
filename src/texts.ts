@@ -106,6 +106,18 @@ export const texts = {
 			cardLink: (url: string): string => ` → <a href="${url}">картка</a>`,
 		},
 	},
+	/** /stats: a board per joke, this month's count before the all-time one. */
+	stats: {
+		header: (month: string): string => `📊 Статистика · ${month} / за весь час`,
+		all: '📢 /all',
+		domikpisik: '🏠 /domikpisik',
+		joins: (month: number, allTime: number): string => `✅ Граю · разом ${month} / ${allTime}`,
+		poolsOpened: '🎮 Відкриває пули',
+		passes: '❌ Пас',
+		row: (place: number, name: string, month: number, allTime: number): string =>
+			`${place}. ${name} — ${month} / ${allTime}`,
+		empty: '— поки порожньо',
+	},
 } as const;
 
 const UKRAINIAN = new Intl.Collator('uk');

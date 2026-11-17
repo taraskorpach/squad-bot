@@ -14,6 +14,14 @@ export interface Tally extends Counts {
 	userId: number;
 }
 
+/** Everything /stats shows: each kind's tallies, the joins' total, and who is who. */
+export interface Stats {
+	tallies: Record<EventKind, readonly Tally[]>;
+	joins: Counts;
+	/** Each person's name as the chat tells them apart, leavers' too. */
+	names: ReadonlyMap<number, string>;
+}
+
 type CountsRow = { month: number; all_time: number };
 type TallyRow = CountsRow & { user_id: number };
 
