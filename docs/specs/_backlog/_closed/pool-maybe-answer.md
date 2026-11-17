@@ -2,6 +2,7 @@
 title: A "Не знаю / ±" answer on the pool card
 tags: [pools]
 created: 2026-11-17T15:03:57+02:00
+resolution: promoted → docs/specs/pool-maybe/
 ---
 Taras, 2026-11-17: "додати кнопку не знаю/+- для голосування".
 
