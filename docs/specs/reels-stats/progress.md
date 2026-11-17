@@ -14,4 +14,4 @@
 ## Phases
 
 - [x] Phase 1 — Posts on the board → `phases/phase-1-content-board.md` · deployed 2026-11-17
-- [x] Phase 2 — The баян and 👀 → `phases/phase-2-bayan-and-reaction.md`
+- [x] Phase 2 — The баян and 👀 → `phases/phase-2-bayan-and-reaction.md` · deployed 2026-11-17
