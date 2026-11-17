@@ -12,6 +12,7 @@
 
 Every merge to `main` deploys through GitHub Actions. PRs need the GitHub repo from phase 1.
 PR #3 merged 2026-11-17 as a77ae62 (merge).
+PR #2 merged 2026-11-17 as 4443441 (merge).
 
 ## Pre-PR checks
 
