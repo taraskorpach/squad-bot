@@ -1,5 +1,48 @@
 import { describe, expect, it } from 'vitest';
-import { argsErrorText, openingMessages, openingWhen } from '../../src/pools/pool-messages';
+import {
+	argsErrorText,
+	movedUpText,
+	openingMessages,
+	openingWhen,
+	squadCompleteText,
+	toastOf,
+} from '../../src/pools/pool-messages';
+import type { Placement } from '../../src/pools/pool-rules';
+
+describe('toastOf', () => {
+	it.each<[Placement, string]>([
+		[{ outcome: 'squad' }, 'Ти в грі ✅'],
+		[{ outcome: 'bench', benchPlace: 2 }, 'Місць немає — ти на лаві, №2 🪑'],
+		[{ outcome: 'already-in' }, 'Ти вже в пулі'],
+		[{ outcome: 'passed' }, 'Пас ❌'],
+		[{ outcome: 'already-passed' }, 'Ти вже пасуєш'],
+	])('answers %o with its toast', (placement, toast) => {
+		expect(toastOf(placement)).toBe(toast);
+	});
+});
+
+describe('squadCompleteText', () => {
+	it('names the squad, and its start while that is still ahead', () => {
+		expect(squadCompleteText('CS2', ['m1', 'm2'], kyiv(16, 21), kyiv(16, 19))).toBe(
+			'🎮 Склад на CS2 зібрано: m1, m2. Старт о 21:00.',
+		);
+	});
+
+	it('leaves the start out for a pool now or a start already past', () => {
+		expect(squadCompleteText('R&D', ['m1'], undefined, kyiv(16, 19))).toBe(
+			'🎮 Склад на R&amp;D зібрано: m1.',
+		);
+		expect(squadCompleteText('CS2', ['m1'], kyiv(16, 18), kyiv(16, 19))).toBe(
+			'🎮 Склад на CS2 зібрано: m1.',
+		);
+	});
+});
+
+describe('movedUpText', () => {
+	it('tells the one who moved up that they play now', () => {
+		expect(movedUpText('m1', 'CS2')).toBe('m1, звільнилось місце — ти граєш у CS2.');
+	});
+});
 
 // Kyiv is two hours ahead of UTC in winter.
 const kyiv = (day: number, hour: number, minute = 0) => Date.UTC(2026, 10, day, hour - 2, minute);

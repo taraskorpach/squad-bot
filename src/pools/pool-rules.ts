@@ -17,19 +17,22 @@ export interface Lineup {
 	unanswered: number[];
 }
 
-export type Outcome = 'squad' | 'bench' | 'passed' | 'already-in' | 'already-passed';
+/** Where an answer left the person; on the bench, also where in its line, counting from 1. */
+export type Placement =
+	| { outcome: 'squad' | 'passed' | 'already-in' | 'already-passed' }
+	| { outcome: 'bench'; benchPlace: number };
 
-export interface AnswerDecision {
+export type AnswerDecision = Placement & {
 	/** The person's new answer, or none when it repeats the one they gave. */
 	write?: Answer;
-	outcome: Outcome;
-	/** Where on the bench, counting from 1, for `bench`. */
-	benchPlace?: number;
 	/** Who moved from the bench into the squad, the person who answered left out. */
 	movedUp: number[];
 	/** The squad just reached its size and was never announced: announce it, once. */
 	squadCompleted: boolean;
-}
+};
+
+/** What `/join` joins: the pool its reply points at, or else the newest open one. */
+export type JoinTarget = { kind: 'pool'; poolId: number } | { kind: 'closed' } | { kind: 'none' };
 
 export interface Seats {
 	size: number;
@@ -99,11 +102,24 @@ export function answer(
 	};
 }
 
-function placeOf(choice: Choice, userId: number, after: Lineup) {
-	if (choice === 'pass') return { outcome: 'passed' as const };
+/**
+ * A reply names its pool through any message the bot posted for it: an open pool is joined, a
+ * closed one gets the closed reply. No reply, or a reply to anything else, joins the newest.
+ */
+export function joinTarget(
+	replied: { id: number; status: 'open' | 'closed' } | undefined,
+	newestOpen: { id: number } | undefined,
+): JoinTarget {
+	if (replied)
+		return replied.status === 'open' ? { kind: 'pool', poolId: replied.id } : { kind: 'closed' };
+	return newestOpen ? { kind: 'pool', poolId: newestOpen.id } : { kind: 'none' };
+}
+
+function placeOf(choice: Choice, userId: number, after: Lineup): Placement {
+	if (choice === 'pass') return { outcome: 'passed' };
 	const benchIndex = after.bench.indexOf(userId);
-	if (benchIndex === -1) return { outcome: 'squad' as const };
-	return { outcome: 'bench' as const, benchPlace: benchIndex + 1 };
+	if (benchIndex === -1) return { outcome: 'squad' };
+	return { outcome: 'bench', benchPlace: benchIndex + 1 };
 }
 
 function nextRank(answers: readonly Answer[]): number {

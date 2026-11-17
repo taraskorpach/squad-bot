@@ -1,5 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { type Answer, answer, closingTime, lineupOf } from '../../src/pools/pool-rules';
+import { type Answer, answer, closingTime, joinTarget, lineupOf } from '../../src/pools/pool-rules';
+
+describe('joinTarget', () => {
+	it.each([
+		[
+			'the open pool a reply points at',
+			{ id: 3, status: 'open' },
+			{ id: 9 },
+			{ kind: 'pool', poolId: 3 },
+		],
+		[
+			'nothing, for a reply to a closed pool',
+			{ id: 3, status: 'closed' },
+			{ id: 9 },
+			{ kind: 'closed' },
+		],
+		['the newest open pool without a reply', undefined, { id: 9 }, { kind: 'pool', poolId: 9 }],
+		['no pool when none is open', undefined, undefined, { kind: 'none' }],
+	] as const)('is %s', (_case, replied, newestOpen, target) => {
+		expect(joinTarget(replied, newestOpen)).toEqual(target);
+	});
+});
 
 describe('closingTime', () => {
 	const HOUR = 60 * 60 * 1000;
