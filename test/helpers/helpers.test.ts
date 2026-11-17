@@ -1,8 +1,45 @@
 import { env } from 'cloudflare:workers';
 import { Api, Bot, GrammyError, HttpError } from 'grammy';
 import { describe, expect, it } from 'vitest';
+import { captionMessage, hiddenLinkMessage, linkMessage, withLinks } from './links';
 import { telegram } from './telegram';
 import { BOT, botAdded, CHAT_ID, command, memberChange, tap, textMessage, users } from './updates';
+
+describe('messages with links', () => {
+	const linked = (text: string, entities: readonly { offset: number; length: number }[]) =>
+		entities.map(({ offset, length }) => text.slice(offset, offset + length));
+
+	it('carry the url entities Telegram adds, at UTF-16 offsets past an emoji', () => {
+		const text = '🔥 глянь https://youtu.be/dQw4w9WgXcQ і instagram.com/reel/DezXNvMGxHM';
+
+		const { message } = linkMessage(text);
+
+		expect(linked(text, message?.entities ?? [])).toEqual([
+			'https://youtu.be/dQw4w9WgXcQ',
+			'instagram.com/reel/DezXNvMGxHM',
+		]);
+	});
+
+	it("keep a command's own entity first", () => {
+		const { message } = withLinks(command('/all глянь https://youtu.be/dQw4w9WgXcQ'));
+
+		expect(message?.entities?.map((entity) => entity.type)).toEqual(['bot_command', 'url']);
+	});
+
+	it('put links in a photo caption, and words over a hidden link', () => {
+		const caption = captionMessage('дивись https://vm.tiktok.com/ZMhvqJ8Fx/').message;
+		const hidden = hiddenLinkMessage('дивись', 'https://youtu.be/dQw4w9WgXcQ').message;
+
+		expect(caption?.text).toBeUndefined();
+		expect(caption?.photo).toHaveLength(1);
+		expect(linked(caption?.caption ?? '', caption?.caption_entities ?? [])).toEqual([
+			'https://vm.tiktok.com/ZMhvqJ8Fx/',
+		]);
+		expect(hidden?.entities).toEqual([
+			{ type: 'text_link', offset: 0, length: 6, url: 'https://youtu.be/dQw4w9WgXcQ' },
+		]);
+	});
+});
 
 describe('the Telegram fake', () => {
 	it('records each call with its method and payload', async () => {
