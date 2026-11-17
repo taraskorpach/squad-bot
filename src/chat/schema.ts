@@ -100,6 +100,27 @@ export const MIGRATIONS: readonly Migration[] = [
 			ALTER TABLE pools ADD COLUMN timer_retry_at INTEGER;
 		`,
 	},
+	{
+		id: 5,
+		description: 'answers take any kind: the CHECK on choice goes, for 🤷 ±',
+		// SQLite can't change a CHECK in place, so the table is rebuilt once. The answer kinds are
+		// the Choice type in src/pools/pool-rules.ts, as the event kinds are EventKind. Nothing
+		// references answers, so dropping it breaks no foreign key.
+		sql: `
+			CREATE TABLE answers_v5 (
+				pool_id     INTEGER NOT NULL REFERENCES pools (id),
+				user_id     INTEGER NOT NULL,
+				choice      TEXT NOT NULL,
+				rank        INTEGER NOT NULL,
+				answered_at INTEGER NOT NULL,
+				PRIMARY KEY (pool_id, user_id)
+			);
+			INSERT INTO answers_v5 (pool_id, user_id, choice, rank, answered_at)
+				SELECT pool_id, user_id, choice, rank, answered_at FROM answers;
+			DROP TABLE answers;
+			ALTER TABLE answers_v5 RENAME TO answers;
+		`,
+	},
 ];
 
 /** Each migration commits with its own row, so one that fails halfway leaves nothing behind. */
