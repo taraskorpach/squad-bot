@@ -127,6 +127,16 @@ export function saveCard(sql: SqlStorage, poolId: number, messageId: number, ren
 	savePoolMessage(sql, poolId, messageId);
 }
 
+/** A tap on a card whose id was never stored: that message is the card. */
+export function adoptCard(sql: SqlStorage, poolId: number, messageId: number): void {
+	const adopted = sql.exec(
+		'UPDATE pools SET message_id = ? WHERE id = ? AND message_id IS NULL',
+		messageId,
+		poolId,
+	).rowsWritten;
+	if (adopted > 0) savePoolMessage(sql, poolId, messageId);
+}
+
 export function saveCardRender(sql: SqlStorage, poolId: number, render: string): void {
 	sql.exec('UPDATE pools SET card_render = ? WHERE id = ?', render, poolId);
 }

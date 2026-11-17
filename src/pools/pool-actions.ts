@@ -1,24 +1,11 @@
 // What happens to a pool, for handlers and the alarm alike: written against a room, never a
 // grammY context. Each action decides and writes first, then calls Telegram, each call on its own.
-import { attempt } from '../chat/attempt';
 import type { RoomAccess } from '../chat/room';
-import { membersById, membersInChat } from '../members/member-store';
-import { displayNames, mentionsOf } from '../members/mentions';
-import type { Member } from '../members/roster';
 import { recordEvent } from '../stats/event-store';
-import { MESSAGE_FORMAT, replyingTo } from '../telegram';
-import { renderCard } from './pool-format';
-import { openingMessages, openingWhen } from './pool-messages';
-import { answer, closingTime, type Lineup, lineupOf } from './pool-rules';
-import {
-	answersOf,
-	insertPool,
-	type Pool,
-	poolById,
-	saveAnswer,
-	saveCard,
-	savePoolMessage,
-} from './pool-store';
+import { cardState, mentionsIn, postCard, postUnderCard, refreshCard } from './pool-card';
+import { movedUpText, squadCompleteText } from './pool-messages';
+import { type AnswerDecision, answer, type Choice, closingTime } from './pool-rules';
+import { answersOf, insertPool, markSquadAnnounced, poolById, saveAnswer } from './pool-store';
 
 export interface PoolRequest {
 	game: string;
@@ -31,13 +18,10 @@ export interface PoolRequest {
 	commandId: number;
 }
 
-/** What a card shows: the pool, its lineup, and the names of everyone on it. */
-export interface CardState {
-	pool: Pool;
-	lineup: Lineup;
-	names: Map<number, string>;
-	inChat: Member[];
-}
+export type AnswerResult =
+	| { kind: 'answered'; decision: AnswerDecision }
+	| { kind: 'closed' }
+	| { kind: 'missing' };
 
 /** Opens a pool with its author playing, in one commit, then posts its card and tags everyone. */
 export async function openPool(room: RoomAccess, request: PoolRequest): Promise<void> {
@@ -55,54 +39,47 @@ export async function openPool(room: RoomAccess, request: PoolRequest): Promise<
 }
 
 /**
- * Posts the card, then the opening tag messages under it, and records them all as the pool's.
- * A card that doesn't go out leaves the pool without one: edits skip it, and the alarm posts it.
+ * Commits a Граю or Пас with its event, dated `at`. In the same commit, the first time the squad
+ * fills, its flag is set, so the announcement goes out once whatever happens after.
  */
-export async function postCard(room: RoomAccess, poolId: number, replyTo?: number): Promise<void> {
+export function applyAnswer(
+	room: RoomAccess,
+	poolId: number,
+	userId: number,
+	choice: Choice,
+	at: number,
+): AnswerResult {
+	return room.tx((sql): AnswerResult => {
+		const pool = poolById(sql, poolId);
+		if (!pool) return { kind: 'missing' };
+		if (pool.status === 'closed') return { kind: 'closed' };
+		const decision = answer(pool, answersOf(sql, poolId), userId, choice, at);
+		if (decision.write) {
+			saveAnswer(sql, poolId, decision.write);
+			recordEvent(sql, { kind: choice === 'play' ? 'join' : 'pass', userId, poolId, at });
+		}
+		if (decision.squadCompleted) markSquadAnnounced(sql, poolId);
+		return { kind: 'answered', decision };
+	});
+}
+
+/** An answer, shown: the card first, then the complete squad's message, then each move-up. */
+export async function showAnswer(
+	room: RoomAccess,
+	poolId: number,
+	decision: AnswerDecision,
+): Promise<void> {
+	await refreshCard(room, poolId);
 	const state = room.read((sql) => cardState(sql, poolId));
 	if (!state) return;
-	const card = renderCard(state.pool, state.lineup, state.names, room.clock());
-	const format = replyTo === undefined ? MESSAGE_FORMAT : replyingTo(replyTo);
-	const sent = await attempt('pools: the card', () =>
-		room.api.sendMessage(room.chatId, card.text, { ...format, reply_markup: card.keyboard }),
-	);
-	if (!sent) return;
-	room.write((sql) => saveCard(sql, poolId, sent.message_id, JSON.stringify(card)));
-	await postOpening(room, state, sent.message_id);
-}
-
-export function cardState(sql: SqlStorage, poolId: number): CardState | undefined {
-	const pool = poolById(sql, poolId);
-	if (!pool) return undefined;
-	const answers = answersOf(sql, poolId);
-	const inChat = membersInChat(sql);
-	const inChatIds = inChat.map((member) => member.id);
-	const leavers = membersById(
-		sql,
-		answers.map((given) => given.userId).filter((id) => !inChatIds.includes(id)),
-	);
-	return {
-		pool,
-		lineup: lineupOf(pool.size, answers, inChatIds),
-		names: displayNames([...inChat, ...leavers]),
-		inChat,
-	};
-}
-
-async function postOpening(room: RoomAccess, state: CardState, cardId: number): Promise<void> {
-	const { pool, names, inChat } = state;
-	const others = inChat.filter((member) => member.id !== pool.authorId);
-	const messages = openingMessages(
-		names.get(pool.authorId) ?? '',
-		pool.game,
-		openingWhen(pool.startsAt, pool.openedAt),
-		mentionsOf(others, inChat),
-		room.mentionChunk,
-	);
-	for (const text of messages) {
-		const sent = await attempt('pools: a tag message', () =>
-			room.api.sendMessage(room.chatId, text, replyingTo(cardId)),
-		);
-		if (sent) room.write((sql) => savePoolMessage(sql, pool.id, sent.message_id));
+	const { pool, lineup } = state;
+	if (decision.squadCompleted) {
+		const mentions = mentionsIn(state, lineup.players);
+		const text = squadCompleteText(pool.game, mentions, pool.startsAt, room.clock());
+		await postUnderCard(room, poolId, pool.messageId, text);
+	}
+	for (const userId of decision.movedUp) {
+		const [mention = ''] = mentionsIn(state, [userId]);
+		await postUnderCard(room, poolId, pool.messageId, movedUpText(mention, pool.game));
 	}
 }

@@ -5,6 +5,7 @@ import type { BotContext, UpdateRoom } from './context';
 import { tagAll } from './members/all-handlers';
 import { learningMembers } from './members/member-handlers';
 import { welcoming } from './members/welcome-handlers';
+import { poolTaps } from './pools/pool-callbacks';
 import { pooling } from './pools/pool-handlers';
 import { countDomikpisik } from './stats/domikpisik-handlers';
 import { API_TIMEOUT_SECONDS, personSending, sentAt } from './telegram';
@@ -15,6 +16,7 @@ export const FEATURES: readonly Middleware<BotContext>[] = [
 	tagAll,
 	countDomikpisik,
 	pooling,
+	poolTaps,
 ];
 
 /**
