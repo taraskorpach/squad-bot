@@ -4,6 +4,7 @@
 
 1 code phase, one PR from `feat/pool-maybe`. Merging deploys the bot, and the first update after
 the deploy runs migration 5 on the live object.
+PR #7 merged 2026-11-17 as e9764a2 (merge).
 
 ## Pre-PR checks
 
