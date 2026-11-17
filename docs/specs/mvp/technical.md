@@ -331,6 +331,11 @@ The side effects shared by callbacks, `/join` and timers. They are written again
 - **Arming.**
   - After a commit that changes timing (a pool opened or closed, a ping or a retry recorded), compute `nextDue` with synchronous SQL. Call `setAlarm` (or `deleteAlarm`) without awaiting, in the same synchronous block, so the alarm commits with the change (alarm operations follow the storage rules, wave 2 §4).
   - At the end of every queued task, compare `getAlarm()` with `nextDue` and set it when they differ. An alarm lost for any reason comes back with the next update.
+  - In code (phase 8):
+    - `RoomAccess.arm()` does the first, and `openPool` and `commitClose` call it.
+    - `Room.armIfChanged()` does the second, from `ChatRoom` after every update and alarm.
+    - The planner and the runner reach `chat/` as `TIMERS` (`{ nextDue, run }`) from `src/bot.ts`. `ChatRoom.timers` is a test seam.
+  - A missing card is due at once, so `openPool`'s arming wakes the object right after the card's send. If the card did go out, the alarm finds nothing due and re-arms.
 - **`alarm()`** runs in the queue, each due action in its own `try`:
   - A missing card: `postCard`.
   - A start ping: commit `start_pinged = 1`, then tag the players (not the bench), with the fill when the squad isn't complete. No ping when nobody plays. A ping more than 15 minutes late is skipped and marked done.
@@ -339,7 +344,7 @@ The side effects shared by callbacks, `/join` and timers. They are written again
 - **Retries.**
   - A failing action sets `timer_attempts + 1` and `timer_retry_at = now + 1, 2 or 4 min` in its own write. Failing means its commit failed, or, for the card and the start ping, the Telegram call after the commit failed. For the start ping, the flag goes back to 0.
   - A success clears both columns.
-  - After 3 attempts the action is given up and logged: the card stays missing, the ping is skipped, or the pool is closed by a minimal update.
+  - After the fourth try (once, then after 1, 2 and 4 minutes) the action is given up and logged. The card stays missing: its used-up tries keep it from coming due. The ping is marked done. The pool is closed by a minimal update. A retry holds back all of the pool's actions (phase 8).
   - Other messages that are sent once aren't retried (`design.md` → *Edge cases*).
 - **Unexpected errors.** On any unexpected error in `alarm()`, call `setAlarm(clock() + 60_000)` and skip the end-of-task re-arm to a past time. After 6 failed retries, alarms stop until the next `setAlarm` (wave 2 §4). Without the retry columns, a failing action would point the alarm at the past and fire in a loop, burning the free plan's daily requests and rows within minutes.
 - Alarms fire at least once and can be up to a minute late. The flags and `status` commit before the Telegram calls, so a second firing does nothing.
@@ -486,7 +491,7 @@ Local development: a dev bot in a test group, `wrangler dev --tunnel`, then `web
   - A failure before anything was committed or sent returns 500 until the cap, then 200, and the next message goes through.
   - The card's send fails at `/pool`, and the alarm posts it later.
   - An alarm firing twice pings once.
-  - A timer action that always throws stops after 3 attempts.
+  - A timer action that always fails stops after its fourth try.
   - A member's "left" message and their `chat_member` update, in both orders.
 
 ## File tree
@@ -523,7 +528,9 @@ src/
     pool-messages.ts  replies, the messages under a card, toasts            phases 6, 7
     pool-store.ts, pool-actions.ts, pool-card.ts                             phases 6, 7, 8
     pool-handlers.ts, pool-callbacks.ts                                      phases 6, 7
-    pool-timers.ts  timer planner and actions                                phase 8
+    pool-timers.ts  timer planner: nextDue, dueActions (pure)               phase 8
+    pool-alarm.ts   the alarm's runner: each due action, retries, give-ups  phase 8
+    answer-store.ts, timer-store.ts  answers' SQL; the timers' bookkeeping   phases 6, 8
   stats/
     event-store.ts, domikpisik-handlers.ts                                   phase 3
     stats-queries.ts, stats-format.ts, stats-handlers.ts                     phase 9

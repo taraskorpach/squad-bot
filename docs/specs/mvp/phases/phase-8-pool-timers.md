@@ -49,13 +49,13 @@ Follow `technical.md` → *Timers*.
 
 ## Deliverables
 
-- [ ] Migration 4: `start_pinged`, `timer_attempts` and `timer_retry_at` added to `pools`
-- [ ] Timer planner (pure): the next due time over the open pools among missing cards, unpinged starts, closes, retries and the Kyiv midnight that changes a day label
-- [ ] Alarm arming: set in the same synchronous block as each commit that changes timing, and compared with `getAlarm()` at the end of every queued task
-- [ ] `alarm()`: due actions run in the serial queue, each failure retried after 1, 2 and 4 minutes, then given up; after an unexpected error the alarm is set 60 s ahead
-- [ ] Start ping: the players (not the bench) tagged once at the start time, with the fill when the squad isn't complete; none when nobody plays; skipped when more than 15 minutes late
-- [ ] Auto-close: through `closePool`; the card turns final, with no ping
-- [ ] Missing cards and midnight: a pool whose card never got out is posted with its tag message; open cards with a day label re-render at Kyiv midnight
+- [x] Migration 4: `start_pinged`, `timer_attempts` and `timer_retry_at` added to `pools`
+- [x] Timer planner (pure): the next due time over the open pools among missing cards, unpinged starts, closes, retries and the Kyiv midnight that changes a day label
+- [x] Alarm arming: set in the same synchronous block as each commit that changes timing, and compared with `getAlarm()` at the end of every queued task
+- [x] `alarm()`: due actions run in the serial queue, each failure retried after 1, 2 and 4 minutes, then given up; after an unexpected error the alarm is set 60 s ahead
+- [x] Start ping: the players (not the bench) tagged once at the start time, with the fill when the squad isn't complete; none when nobody plays; skipped when more than 15 minutes late
+- [x] Auto-close: through `closePool`; the card turns final, with no ping
+- [x] Missing cards and midnight: a pool whose card never got out is posted with its tag message; open cards with a day label re-render at Kyiv midnight
 
 ## Phase-local notes
 
