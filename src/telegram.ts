@@ -28,6 +28,14 @@ export const MESSAGE_FORMAT = {
 	link_preview_options: { is_disabled: true },
 } as const;
 
+/** A message in reply to another, which still goes out if that one was deleted. */
+export function replyingTo(messageId: number) {
+	return {
+		...MESSAGE_FORMAT,
+		reply_parameters: { message_id: messageId, allow_sending_without_reply: true },
+	};
+}
+
 /** The chat an update belongs to, whatever its type. A tap's is the chat of its message. */
 export function chatOf(update: Update): Chat | undefined {
 	const withChat =

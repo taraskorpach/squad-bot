@@ -40,6 +40,10 @@ export class UpdateRoom implements RoomAccess {
 		return this.room.write(fn);
 	}
 
+	read<T>(fn: (sql: SqlStorage) => T): T {
+		return this.room.read(fn);
+	}
+
 	clock(): number {
 		return this.room.clock();
 	}

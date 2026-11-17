@@ -25,6 +25,8 @@ export interface RoomAccess {
 	tx<T>(fn: (sql: SqlStorage) => T): T;
 	/** For idempotent writes, which a redelivery may repeat harmlessly. */
 	write<T>(fn: (sql: SqlStorage) => T): T;
+	/** Reads that change nothing. */
+	read<T>(fn: (sql: SqlStorage) => T): T;
 }
 
 /**
@@ -70,6 +72,10 @@ export class Room implements RoomAccess {
 
 	/** For idempotent writes, which a redelivery may repeat harmlessly. */
 	write<T>(fn: (sql: SqlStorage) => T): T {
+		return this.tx(fn);
+	}
+
+	read<T>(fn: (sql: SqlStorage) => T): T {
 		return this.tx(fn);
 	}
 }

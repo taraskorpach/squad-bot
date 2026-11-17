@@ -8,6 +8,7 @@ import {
 	isGroup,
 	isInChat,
 	personSending,
+	replyingTo,
 	sentAt,
 } from '../src/telegram';
 import {
@@ -172,6 +173,16 @@ describe('personSending', () => {
 		['an update that is neither', memberChange(users.oleg, { from: 'left', to: 'member' })],
 	])('is nobody for %s', (_case, update) => {
 		expect(personSending(update)).toBeUndefined();
+	});
+});
+
+describe('replyingTo', () => {
+	it('replies in HTML without previews, and still sends if the message was deleted', () => {
+		expect(replyingTo(42)).toEqual({
+			parse_mode: 'HTML',
+			link_preview_options: { is_disabled: true },
+			reply_parameters: { message_id: 42, allow_sending_without_reply: true },
+		});
 	});
 });
 

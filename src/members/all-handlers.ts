@@ -2,7 +2,7 @@ import { Composer } from 'grammy';
 import { attempt } from '../chat/attempt';
 import type { BotContext } from '../context';
 import { recordEvent } from '../stats/event-store';
-import { MESSAGE_FORMAT, sentAt } from '../telegram';
+import { replyingTo, sentAt } from '../telegram';
 import { texts } from '../texts';
 import { membersInChat } from './member-store';
 import { chunk, mentionsOf } from './mentions';
@@ -38,10 +38,3 @@ tagAll.command('all', async (ctx) => {
 		await attempt('/all: a reply', () => ctx.reply(text, replyingTo(ctx.msg.message_id)));
 	}
 });
-
-function replyingTo(messageId: number) {
-	return {
-		...MESSAGE_FORMAT,
-		reply_parameters: { message_id: messageId, allow_sending_without_reply: true },
-	};
-}
