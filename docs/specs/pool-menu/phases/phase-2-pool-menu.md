@@ -25,12 +25,12 @@ needs: [1]
 
 ## Deliverables
 
-- [ ] Button data (pure): `m:{author}:{game}:{seats}:{time}` encoded and decoded, other data left alone, every state under 64 bytes
-- [ ] `upcomingHours(now)`: the full hours after now, today in Kyiv, up to 23
-- [ ] Screens (pure): game, seats, time, the other hour and its minutes, with design.md's copy and buttons
-- [ ] `/pool` with nothing after it replies with the menu; with anything after it, opens as before
-- [ ] Taps: forward and back, cancel deletes the menu, someone else's tap gets a toast, a passed hour re-renders the time step
-- [ ] A chosen time opens the pool: the menu goes, the card posts as a reply to `/pool`, and a second tap opens nothing
+- [x] Button data (pure): `m:{author}:{game}:{seats}:{time}` encoded and decoded, other data left alone, every state under 64 bytes
+- [x] `upcomingHours(now)`: the full hours after now, today in Kyiv, up to 23
+- [x] Screens (pure): game, seats, time, the other hour and its minutes, with design.md's copy and buttons
+- [x] `/pool` with nothing after it replies with the menu; with anything after it, opens as before
+- [x] Taps: forward and back, cancel deletes the menu, someone else's tap gets a toast, a passed hour re-renders the time step
+- [x] A chosen time opens the pool: the menu goes, the card posts as a reply to `/pool`, and a second tap opens nothing
 
 ## Phase-local notes
 

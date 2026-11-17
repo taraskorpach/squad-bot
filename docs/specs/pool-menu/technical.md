@@ -50,12 +50,12 @@ A Composer registered in `src/bot.ts` before the pool taps' catch-all:
 1. Not the author: `answerCallbackQuery` with `notYours`.
 2. Cancel: delete the menu (`deleteMessage`), toast `cancelled`.
 3. A state with a time still to pick: edit the menu to `menuScreen(state, clock)`.
-4. `tHH` whose hour has passed on the room's clock: re-render the time step, toast `timePassed`.
-5. `n`, `tHH` or `HHMM`: claim `menu:{chat}:{message}` in the room's throttle for a minute, so a
-   second tap opens nothing; delete the menu (on failure, edit it to `opened` without buttons);
-   then `openPool(room, { game, size, authorId, openedAt: clock, startsAt, commandId })`, where
-   `commandId` is the menu's `reply_to_message` and `startsAt` is `undefined` for now, today's
-   `HH:00` for `tHH`, and `startOf({ hour, minute }, clock)` for `HHMM`.
+4. `tHH` whose hour has passed on the room's clock: re-render the time step, toast `hourPassed`.
+5. `n`, `tHH` or `HHMM`: claim `menu:{message}` in the room's throttle for a minute, so a
+   second tap opens nothing; `openPool(room, { game, size, authorId, openedAt: clock, startsAt,
+   commandId })`, where `commandId` is the menu's `reply_to_message` and `startsAt` is
+   `undefined` for now, today's `HH:00` for `tHH`, and `startOf({ hour, minute }, clock)` for
+   `HHMM`; then delete the menu (on failure, edit it to `opened` without buttons).
 
 Every tap is answered, or its button keeps spinning. Taps carry no date, so they use the room's
 clock (`docs/specs/mvp/ledger/decision-event-time-is-when-the-person-acted.md`).
