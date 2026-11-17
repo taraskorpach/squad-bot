@@ -15,11 +15,11 @@
 ## Phases
 
 - [x] Phase 1 — Accounts and repo → `phases/phase-1-accounts-and-repo.md`
-- [x] Phase 2 — Skeleton and webhook plumbing → `phases/phase-2-skeleton-and-webhook.md`
-- [x] Phase 3 — Members, /all and /domikpisik → `phases/phase-3-members-and-all.md`
-- [x] Phase 4 — Setup script and deploy pipeline → `phases/phase-4-setup-and-deploy.md`
+- [x] Phase 2 — Skeleton and webhook plumbing → `phases/phase-2-skeleton-and-webhook.md` · deployed 2026-11-17
+- [x] Phase 3 — Members, /all and /domikpisik → `phases/phase-3-members-and-all.md` · deployed 2026-11-17
+- [x] Phase 4 — Setup script and deploy pipeline → `phases/phase-4-setup-and-deploy.md` · deployed 2026-11-17
 - [ ] Phase 5 — Go live with /all, pools and stats → `phases/phase-5-go-live.md`
-- [x] Phase 6 — Pools: open, answer, bench → `phases/phase-6-pools-core.md`
-- [x] Phase 7 — Pool buttons and /pools → `phases/phase-7-pool-buttons.md`
-- [x] Phase 8 — Pool timers → `phases/phase-8-pool-timers.md`
-- [x] Phase 9 — Stats → `phases/phase-9-stats.md`
+- [x] Phase 6 — Pools: open, answer, bench → `phases/phase-6-pools-core.md` · deployed 2026-11-17
+- [x] Phase 7 — Pool buttons and /pools → `phases/phase-7-pool-buttons.md` · deployed 2026-11-17
+- [x] Phase 8 — Pool timers → `phases/phase-8-pool-timers.md` · deployed 2026-11-17
+- [x] Phase 9 — Stats → `phases/phase-9-stats.md` · deployed 2026-11-17

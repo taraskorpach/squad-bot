@@ -45,7 +45,7 @@ after a day of use (wave 2 §2: 10 ms per request on Free, never measured for gr
 - [x] Gate: Taras agrees to go live in the chat — Taras in the session, 2026-11-17 13:30: «Далі давай додавати в чат», after trying A, B and C in Pisikcs Test
 - [x] Bot added to the chat as an admin (Taras keeps every right on: «Та байдуже на права, хай будуть усі»); the supergroup's id found with `discover` (evidence: date and the chat type) — 2026-11-17 13:27, Кс?, a supergroup, -1002916635390; admin with every right
 - [x] Production secrets set before PR A merges: `BOT_TOKEN`, `WEBHOOK_SECRET` (the same value in `.prod.vars`), `ALLOWED_CHAT_ID`, `BOT_INFO` (evidence: date) — 2026-11-17 13:29, wrangler secret bulk .prod.vars: BOT_TOKEN, WEBHOOK_SECRET, ALLOWED_CHAT_ID, BOT_INFO on the new Worker squad-bot
-- [ ] PRs A, B and C merged at once (#2 into PR A's branch, then #1 into main) and the deploy workflow green; phases 2–4 and 6–9 marked deployed (evidence: the workflow run)
+- [x] PRs A, B and C merged at once (#2 into PR A's branch, then #1 into main) and the deploy workflow green; phases 2–4 and 6–9 marked deployed (evidence: the workflow run) — 2026-11-17: #2 into feat/mvp-pr-a (4443441), #1 into main (046a46d); deploy run https://github.com/taraskorpach/squad-bot/actions/runs/44074832682 green
 - [ ] Webhook set and the command menu visible in the chat (evidence: date)
 - [ ] Welcome posted and all seven members known (evidence: an `/all` that tags six)
 - [ ] Mention test done and `MENTION_CHUNK` settled (evidence: who was notified, the value)
