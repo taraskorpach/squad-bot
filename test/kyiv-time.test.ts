@@ -3,8 +3,6 @@ import {
 	clockTime,
 	dayAndMonth,
 	daysFrom,
-	monthName,
-	monthWindow,
 	nextMidnight,
 	occurrencesAround,
 } from '../src/kyiv-time';
@@ -76,80 +74,5 @@ describe('clockTime and dayAndMonth', () => {
 		expect(clockTime(utc(11, 16, 7, 5))).toBe('09:05');
 		expect(dayAndMonth(utc(11, 16, 22, 30))).toBe('17.11');
 		expect(dayAndMonth(utc(3, 1, 12))).toBe('01.03');
-	});
-});
-
-describe('monthWindow', () => {
-	// A window built from the offset at `now` is right whenever `now` and the boundary share it,
-	// so the clock-change cases put them on opposite sides of a change. Summer time starts on
-	// 31.03.2030 and ends on 31.10.2027, the last Sundays of those months.
-	it.each([
-		{
-			case: 'a winter month, two hours ahead of UTC',
-			now: Date.UTC(2026, 10, 17, 10),
-			start: Date.UTC(2026, 9, 31, 22),
-			end: Date.UTC(2026, 10, 30, 22),
-		},
-		{
-			case: 'a summer month, three hours ahead',
-			now: Date.UTC(2026, 6, 15, 12),
-			start: Date.UTC(2026, 5, 30, 21),
-			end: Date.UTC(2026, 6, 31, 21),
-		},
-		{
-			case: 'a month read after its clocks went back, which began in summer time',
-			now: Date.UTC(2027, 9, 31, 10),
-			start: Date.UTC(2027, 8, 30, 21),
-			end: Date.UTC(2027, 9, 31, 22),
-		},
-		{
-			case: 'a month read before its clocks went forward, which ends in summer time',
-			now: Date.UTC(2030, 2, 30, 23),
-			start: Date.UTC(2030, 1, 28, 22),
-			end: Date.UTC(2030, 2, 31, 21),
-		},
-		{
-			case: "a month's first Kyiv hour, while UTC still says the month before",
-			now: Date.UTC(2030, 2, 31, 21, 30),
-			start: Date.UTC(2030, 2, 31, 21),
-			end: Date.UTC(2030, 3, 30, 21),
-		},
-	])('is the Kyiv month as UTC: $case', ({ now, start, end }) => {
-		expect(monthWindow(now)).toEqual({ start, end });
-	});
-
-	it('holds its first instant and not its end, which begins the next month', () => {
-		const november = { start: Date.UTC(2026, 9, 31, 22), end: Date.UTC(2026, 10, 30, 22) };
-
-		expect(monthWindow(november.start)).toEqual(november);
-		expect(monthWindow(november.end - 1)).toEqual(november);
-		expect(monthWindow(november.end)).toEqual({
-			start: november.end,
-			end: Date.UTC(2026, 11, 31, 22),
-		});
-	});
-});
-
-describe('monthName', () => {
-	it.each([
-		[0, 'січень'],
-		[1, 'лютий'],
-		[2, 'березень'],
-		[3, 'квітень'],
-		[4, 'травень'],
-		[5, 'червень'],
-		[6, 'липень'],
-		[7, 'серпень'],
-		[8, 'вересень'],
-		[9, 'жовтень'],
-		[10, 'листопад'],
-		[11, 'грудень'],
-	])('names month %i in the nominative a heading takes: %s', (month, name) => {
-		expect(monthName(Date.UTC(2026, month, 15, 12))).toBe(name);
-	});
-
-	it('names the Kyiv month, not the UTC one', () => {
-		// 1.04.2030 at 00:30 in Kyiv, still 31.03 in UTC.
-		expect(monthName(Date.UTC(2030, 2, 31, 21, 30))).toBe('квітень');
 	});
 });

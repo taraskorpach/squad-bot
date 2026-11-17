@@ -28,7 +28,7 @@ function statsCommand(sentAt = NOW) {
 }
 
 describe('/stats', () => {
-	it("answers with this Kyiv month's boards and all time's, a leaver still named", async () => {
+	it('answers with the all-time boards, a leaver still named', async () => {
 		const stub = await roomWithRecord(
 			[taras, oleg, andriy],
 			[
@@ -36,7 +36,6 @@ describe('/stats', () => {
 				{ kind: 'all', userId: taras.id, at: Date.UTC(2026, 10, 2, 10) },
 				{ kind: 'all', userId: taras.id, at: Date.UTC(2026, 10, 16, 18) },
 				{ kind: 'all', userId: oleg.id, at: Date.UTC(2026, 10, 10, 10) },
-				// 31.10 at 23:30 in Kyiv, then 1.11 at 00:30: both the 31st in UTC.
 				{ kind: 'domikpisik', userId: andriy.id, at: Date.UTC(2026, 9, 31, 21, 30) },
 				{ kind: 'domikpisik', userId: andriy.id, at: Date.UTC(2026, 9, 31, 22, 30) },
 				{ kind: 'pool_open', userId: taras.id, poolId: 1, at: Date.UTC(2026, 10, 16, 16) },
@@ -55,24 +54,24 @@ describe('/stats', () => {
 			{
 				chat_id: CHAT_ID,
 				text: [
-					'📊 Статистика · листопад / за весь час',
+					'📊 Статистика за весь час',
 					'',
 					'📢 /all',
-					'1. Тарас — 2 / 3',
-					'2. Олег — 1 / 1',
+					'1. Тарас — 3',
+					'2. Олег — 1',
 					'',
 					'🏠 /domikpisik',
-					'1. Андрій — 1 / 2',
+					'1. Андрій — 2',
 					'',
-					'✅ Граю · разом 2 / 2',
-					'1. Олег — 1 / 1',
-					'1. Тарас — 1 / 1',
+					'✅ Граю · разом 2',
+					'1. Олег — 1',
+					'1. Тарас — 1',
 					'',
 					'🎮 Відкриває пули',
-					'1. Тарас — 1 / 1',
+					'1. Тарас — 1',
 					'',
 					'❌ Пас',
-					'1. Олег — 1 / 1',
+					'1. Олег — 1',
 				].join('\n'),
 				parse_mode: 'HTML',
 				link_preview_options: { is_disabled: true },
@@ -95,7 +94,7 @@ describe('/stats', () => {
 		await stub.handleUpdate(statsCommand());
 
 		const [reply] = telegram.callsTo('sendMessage');
-		expect(String(reply?.text)).toContain('📢 /all\n1. Андрій К. — 1 / 1\n');
+		expect(String(reply?.text)).toContain('📢 /all\n1. Андрій К. — 1\n');
 	});
 
 	it('stays quiet when it reaches the bot over 10 minutes late', async () => {
@@ -110,6 +109,6 @@ describe('/stats', () => {
 		await freshRoom().handleUpdate(command('/stats', { from: oleg }));
 
 		const [reply] = telegram.callsTo('sendMessage');
-		expect(String(reply?.text)).toMatch(/^📊 Статистика · /);
+		expect(String(reply?.text)).toMatch(/^📊 Статистика за весь час\n/);
 	});
 });

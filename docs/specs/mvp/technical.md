@@ -123,7 +123,7 @@ Never answer 200 for a failed update the way grammY's Deno Workers guide does (`
 
 Times are epoch milliseconds, UTC. Tables are snake_case plurals (Cloudflare's rules).
 
-An event's `at` is when the person acted: a command's message `date`, or the room's clock for a tap, which carries no date. So a late `/all` counts in the month it was made.
+An event's `at` is when the person acted: a command's message `date`, or the room's clock for a tap, which carries no date. The boards count all time today, but a board cut by time would place a late `/all` when it was made.
 
 The schema holds identity and structure. Tunable domain rules (event kinds, size bounds, counting rules) live in code, for two reasons:
 - SQLite can't change a CHECK without rebuilding the table.
@@ -234,8 +234,6 @@ None of these imports grammY or touches storage; time and randomness come in as 
   - `сьогодні о HH:MM` or `завтра о HH:MM`, relative to the render time;
   - `dd.MM о HH:MM` on closed cards.
 - `nextMidnight(now)`: the next Kyiv midnight, when a label can change.
-- `monthWindow(now)`: from the first day of the current Kyiv month at 00:00 to the first day of the next, as `[startMs, endMs)`. SQLite can't do this itself: its `localtime` is the host's UTC, and it has no IANA zones.
-- The month's name: `Intl.DateTimeFormat('uk', { month: 'long' })` in Kyiv, which gives the standalone nominative ("листопад").
 
 ### `/pool` arguments (`src/pools/pool-args.ts`, phase 6)
 - Tokens split on whitespace:
@@ -285,16 +283,13 @@ None of these imports grammY or touches storage; time and randomness come in as 
   - Anything else gets an empty `answerCallbackQuery` from a catch-all registered last in `src/bot.ts`.
 
 ### Stats (`src/stats/stats-queries.ts`, `src/stats/stats-format.ts`, phase 9)
-- Boards, per kind, within the month window and without it:
+- Boards, per kind, for all time (Taras, 2026-11-17: no month for now):
   - `all` and `domikpisik` count every event.
-  - `join`, `pass` and `pool_open` count once per pool and person, placed by that pair's first event (`MIN(at)`), so toggling can't inflate a board.
+  - `join`, `pass` and `pool_open` count once per pool and person, so toggling can't inflate a board.
   - Total joins: distinct (pool, person) pairs of `join`.
 - Names come from `members`, including people who left. `displayNames` tells them apart among
   every member the bot knows (`knownMembers`), so a namesake who left still adds the initial.
-- "This month" is the Kyiv month at the room's clock, as `/pools` labels by it. A stale `/stats`
-  is ignored, so the clock and the message's date differ by at most 10 minutes.
-- Sort by month count, then all-time count, then name. Equal counts share a place (1, 1, 3).
-  Leave out rows that are zero in both.
+- Sort by the count, then name. Equal counts share a place (1, 1, 3).
 
 ### Timer planner (`src/pools/pool-timers.ts`, phase 8)
 - `nextDue(pools, now)` (pure): the earliest of these, over the open pools:
@@ -512,7 +507,7 @@ src/
                     isAdmin, personSending, HI_CALLBACK (import-free)        phases 2, 3, 4
   texts.ts          every Ukrainian string, plural helper (import-free)      phase 3+
   welcome.ts        welcomeMessage({ isAdmin }); imports only the leaves     phase 3
-  kyiv-time.ts      zone, wall time → instant, labels, month window          phases 6, 9
+  kyiv-time.ts      zone, wall time → instant, labels                        phase 6
   bot.ts            createBot(features), the feature list, timer wiring      phase 2+
   context.ts        BotContext with ctx.room                                 phase 2
   chat/

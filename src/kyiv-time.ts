@@ -14,12 +14,6 @@ export interface Occurrences {
 	tomorrow: number;
 }
 
-/** A Kyiv calendar month as UTC instants: from `start`, up to but not including `end`. */
-export interface MonthWindow {
-	start: number;
-	end: number;
-}
-
 /**
  * The instants `time` names on the Kyiv dates of yesterday, today and tomorrow around `ms`.
  * Temporal's compatible rule: a time in the spring-forward gap moves later by the gap
@@ -40,22 +34,6 @@ export function occurrencesAround(time: WallTime, ms: number): Occurrences {
 /** The next 00:00 on the Kyiv clock: when сьогодні and завтра change their meaning. */
 export function nextMidnight(ms: number): number {
 	return startOfDay(inKyiv(ms).toPlainDate().add({ days: 1 }));
-}
-
-/**
- * The Kyiv month `ms` falls in. Each edge is the start of its own day, so a month that holds a
- * clock change is an hour shorter or longer, as the stats count it.
- */
-export function monthWindow(ms: number): MonthWindow {
-	const first = inKyiv(ms).toPlainDate().with({ day: 1 });
-	return { start: startOfDay(first), end: startOfDay(first.add({ months: 1 })) };
-}
-
-const MONTH_NAME = new Intl.DateTimeFormat('uk', { month: 'long', timeZone: KYIV });
-
-/** The Kyiv month's name in the nominative a heading takes: листопад, not листопада. */
-export function monthName(ms: number): string {
-	return MONTH_NAME.format(ms);
 }
 
 /** Kyiv calendar days from `now`'s date to `ms`'s: 0 the same day, 1 the next, -1 the one before. */
