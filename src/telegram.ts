@@ -85,6 +85,11 @@ export function sentAt(message: { date: number }): number {
 	return message.date * 1000;
 }
 
+/** A link to a supergroup's message: t.me/c takes the chat id without its -100. */
+export function messageLink(chatId: number, messageId: number): string {
+	return `https://t.me/c/${String(chatId).replace(/^-100/, '')}/${messageId}`;
+}
+
 /** "Added" means false before and true after; the Worker and the welcome use the same test. */
 export function isInChat(member: ChatMember): boolean {
 	switch (member.status) {
