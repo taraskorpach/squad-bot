@@ -267,8 +267,11 @@ A repeat within 30 s of the last tagging gets a 👌 reaction instead.
 | `join` | Приєднатися до пулу |
 | `pools` | Відкриті пули |
 | `stats` | Статистика |
+| `artemisalwaysright` | Нагадати, що Артем завжди правий |
 
-`/domikpisik` stays out of the menu: it's a joke, not a feature.
+`/domikpisik` stays out of the menu: it's a joke, not a feature. `/artemisalwaysright` (added
+2026-11-17, PR #4) is in it: the bot posts `Нагадую, Артем Поліченко завжди правий і це не
+обговорюється.` and deletes the command; Taras wanted it in the list.
 
 ## Edge cases
 - **Author.** The author starts as the first player and may tap ❌ like anyone; a pool with no
