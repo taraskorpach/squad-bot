@@ -102,6 +102,18 @@ export function pingMessages(mentions: readonly string[], chunkSize: number): st
 	);
 }
 
+/** At the start time: the players, not the bench, with the fill while the squad is short. */
+export function startPingText(
+	game: string,
+	mentions: readonly string[],
+	players: number,
+	size: number,
+): string {
+	const { messages } = texts.pool;
+	const fill = players < size ? messages.startFill(players, size) : '';
+	return messages.startPing(escapeHtml(game), mentions.join(', ')) + fill;
+}
+
 /** After 🎲: the whole squad and the whole bench, so the message is never empty. */
 export function drawText(squad: readonly string[], bench: readonly string[]): string {
 	return texts.pool.messages.drawn(squad.join(', '), bench.join(', '));

@@ -11,10 +11,20 @@ import {
 	openPoolsText,
 	pingMessages,
 	squadCompleteText,
+	startPingText,
 	toastOf,
 } from '../../src/pools/pool-messages';
 import type { Placement } from '../../src/pools/pool-rules';
 import type { Pool } from '../../src/pools/pool-store';
+
+describe('startPingText', () => {
+	it('calls the players at the start, with the fill while the squad is short', () => {
+		expect(startPingText('CS2', ['m1', 'm2', 'm3', 'm4', 'm5'], 5, 5)).toBe(
+			'⏰ CS2 — час! m1, m2, m3, m4, m5',
+		);
+		expect(startPingText('R&D', ['m1', 'm2'], 2, 5)).toBe('⏰ R&amp;D — час! m1, m2 (2/5)');
+	});
+});
 
 describe('pingMessages', () => {
 	it('asks for answers, with the first chunk of mentions, then the rest in chunks', () => {

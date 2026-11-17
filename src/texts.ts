@@ -71,6 +71,8 @@ export const texts = {
 				`✖️ Пул на ${game} закрито автором. ${mentions}`,
 			closedByAuthorAt: (game: string, time: string, mentions: string): string =>
 				`✖️ Пул на ${game} (${time}) закрито автором. ${mentions}`,
+			startPing: (game: string, mentions: string): string => `⏰ ${game} — час! ${mentions}`,
+			startFill: (players: number, size: number): string => ` (${players}/${size})`,
 		},
 		toasts: {
 			inSquad: 'Ти в грі ✅',
