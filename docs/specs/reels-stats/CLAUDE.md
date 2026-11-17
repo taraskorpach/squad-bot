@@ -1,7 +1,7 @@
 ---
 created: 2026-11-17T17:02:05+02:00
 updated: 2026-11-17T17:02:05+02:00
-status: draft
+status: done
 area: [bot]
 domain: [stats, shares]
 scope: [feature]
