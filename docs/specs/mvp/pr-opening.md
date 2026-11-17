@@ -12,6 +12,12 @@
 
 Every merge to `main` deploys through GitHub Actions. PRs need the GitHub repo from phase 1.
 
+The PRs are stacked, because each needs the one before it: B branches from A, and C from B.
+Once a PR merges, the next is retargeted to `main`.
+
+PR #1 · feat/mvp-pr-a
+PR #2 · feat/mvp-pr-b (base feat/mvp-pr-a)
+
 ## Pre-PR checks
 
 Scoped to the one Worker this spec builds. Tick each before opening the PR, never straight to `main`.
