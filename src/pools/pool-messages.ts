@@ -1,6 +1,7 @@
 // What the bot writes about a pool besides its card: replies, the messages under the card, toasts.
 import { clockTime, dayAndMonth, daysFrom } from '../kyiv-time';
 import { chunk, escapeHtml } from '../members/mentions';
+import { messageLink } from '../telegram';
 import { texts } from '../texts';
 import type { PoolArgsError } from './pool-args';
 import { startLabel } from './pool-format';
@@ -159,16 +160,11 @@ export function openPoolsText(listed: readonly ListedPool[], chatId: number, now
 	return [replies.openPools, ...listed.map((entry) => listedLine(entry, chatId, now))].join('\n');
 }
 
-/** A link to a supergroup's message: t.me/c takes the chat id without its -100. */
-export function cardLink(chatId: number, messageId: number): string {
-	return `https://t.me/c/${String(chatId).replace(/^-100/, '')}/${messageId}`;
-}
-
 function listedLine({ pool, players, bench }: ListedPool, chatId: number, now: number): string {
 	const { replies } = texts.pool;
 	const fill = replies.fill(players, pool.size) + (bench > 0 ? replies.onBench(bench) : '');
 	const link =
-		pool.messageId === undefined ? '' : replies.cardLink(cardLink(chatId, pool.messageId));
+		pool.messageId === undefined ? '' : replies.cardLink(messageLink(chatId, pool.messageId));
 	return replies.openPool(escapeHtml(pool.game), startLabel(pool.startsAt, now), fill) + link;
 }
 

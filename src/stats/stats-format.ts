@@ -9,7 +9,7 @@ interface Row {
 	count: number;
 }
 
-/** The reply to /stats: the header, then the five boards. */
+/** The reply to /stats: the header, then the six boards. */
 export function statsText(stats: Stats): string {
 	const copy = texts.stats;
 	const board = (title: string, kind: EventKind): string =>
@@ -18,6 +18,7 @@ export function statsText(stats: Stats): string {
 		copy.header,
 		board(copy.all, 'all'),
 		board(copy.domikpisik, 'domikpisik'),
+		board(copy.shares, 'share'),
 		board(copy.joins(stats.joins), 'join'),
 		board(copy.poolsOpened, 'pool_open'),
 		board(copy.passes, 'pass'),

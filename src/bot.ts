@@ -13,12 +13,14 @@ import { pooling } from './pools/pool-handlers';
 import { poolMenu } from './pools/pool-menu-taps';
 import { openPools } from './pools/pool-store';
 import { nextDue } from './pools/pool-timers';
+import { trackShares } from './shares/share-handlers';
 import { countDomikpisik } from './stats/domikpisik-handlers';
 import { showStats } from './stats/stats-handlers';
 import { API_TIMEOUT_SECONDS, personSending, sentAt } from './telegram';
 
-/** Every feature, in the order an update meets them. */
+/** Every feature, in the order an update meets them. Shares come first: a command can carry a post. */
 export const FEATURES: readonly Middleware<BotContext>[] = [
+	trackShares,
 	welcoming,
 	tagAll,
 	countDomikpisik,

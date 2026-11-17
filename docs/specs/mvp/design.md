@@ -40,7 +40,7 @@ Product decisions come from Taras (in `seed.md`, or in this spec's create sessio
 | Start-time ping | At the start time, tag the players once, not the bench | No ping; a ping 10 minutes before | Taras: "Можна" |
 | Auto-close | Three hours after the start time, or after opening for a pool "now" | At the end of the evening | One rule, no guessing when an evening ends (Taras: "через 3 год це ок") |
 | `/all` | Tags everyone except the caller; every call counted; tags at most once per 30 s, and a repeat inside the window gets a 👌 reaction | Tagging the caller too; no limit at all; a cooldown that drops calls | The caller already knows, and the count is part of the joke (Taras: "Ні"). Telegram allows a bot 20 messages a minute in a group, so unlimited tagging under a leaderboard would silence the pool cards and pings; the window keeps every call counted (Taras, review 2026-11-16) |
-| Stats | Five boards (`/all`, `/domikpisik`, Граю, opened pools, Пас) plus total joins, for all time; Граю, Пас and opened pools counted once per pool and person, by the stats queries over an append-only event record | This month beside all time (built in phase 9, taken out on 2026-11-17); counting every tap; a unique index that drops repeats when they are written | "Taras — 3 / 3" read as noise while the bot is new (Taras: "просто робимо за весь час"); toggling must not inflate a board (*create*); the record keeps every answer, so a monthly board can come back with no table rebuild (review) |
+| Stats | Five boards (`/all`, `/domikpisik`, Граю, opened pools, Пас; a sixth for shared posts came with `reels-stats`) plus total joins, for all time; Граю, Пас and opened pools counted once per pool and person, by the stats queries over an append-only event record | This month beside all time (built in phase 9, taken out on 2026-11-17); counting every tap; a unique index that drops repeats when they are written | "Taras — 3 / 3" read as noise while the bot is new (Taras: "просто робимо за весь час"); toggling must not inflate a board (*create*); the record keeps every answer, so a monthly board can come back with no table rebuild (review) |
 | Bot rights | A group admin with only the pin right | Turning privacy mode off | Admin bots receive every message; privacy changes need the bot removed and re-added (wave 0, telegram-platform §3) |
 | The old tag bot | Leaves the chat once `/all` works here | Naming our command differently | Both would answer a bare `/all` (seed) |
 | What is stored | Members, pools, answers and an event record; never message text | Keeping messages | Privacy (seed) |
@@ -120,7 +120,9 @@ can have no seat limit (`docs/specs/pool-menu/design.md`).
 Lists open pools with their time, fill and a link to each card.
 
 ### `/stats`
-Replies with five leaderboards, each person's count for all time.
+Replies with six leaderboards, each person's count for all time. The sixth, `🍿 Скидає контент`,
+counts the posts each person shares from Instagram, Threads, TikTok and YouTube
+(`docs/specs/reels-stats/`).
 
 ## Screens and copy
 
@@ -220,6 +222,9 @@ A repeat within 30 s of the last tagging gets a 👌 reaction instead.
 🏠 /domikpisik
 1. Андрій — 120
 
+🍿 Скидає контент
+1. Макс — 54
+
 ✅ Граю · разом 143
 1. Ігор — 40
 
@@ -282,7 +287,8 @@ A repeat within 30 s of the last tagging gets a 👌 reaction instead.
 - **Switching answers.** Allowed both ways. Going back to Граю puts the person at the end of the
   queue (bench, if the squad is complete).
 - **Counting.** Граю, Пас and opened pools count once per pool and person, so toggling can't
-  inflate the boards. `/all` and `/domikpisik` count every call.
+  inflate the boards. `/all` and `/domikpisik` count every call. A shared post counts once per
+  post and person (`docs/specs/reels-stats/`).
 - **The draw.** Only someone who said Граю in that pool can press 🎲. It picks the squad at random
   from everyone who said Граю, the rest go to the bench in join order, and the button disappears.
   Later drop-outs are replaced from the bench as usual; later joins go to the end of the bench.

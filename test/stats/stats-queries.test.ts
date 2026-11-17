@@ -91,6 +91,26 @@ describe('tallies', () => {
 		]);
 	});
 
+	it('counts each post a person shared once, however often they shared it', async () => {
+		const shared = (person: User, ref: string): StatEvent => ({
+			kind: 'share',
+			userId: person.id,
+			ref,
+			at: AT,
+		});
+		const events = [
+			shared(maks, 'youtube:dQw4w9WgXcQ'),
+			shared(maks, 'youtube:dQw4w9WgXcQ'),
+			shared(maks, 'tiktok:7312345678901234567'),
+			shared(oleg, 'youtube:dQw4w9WgXcQ'),
+		];
+
+		expect(await over(events, (sql) => tallies(sql, 'share'))).toEqual([
+			{ userId: oleg.id, count: 1 },
+			{ userId: maks.id, count: 2 },
+		]);
+	});
+
 	it('is empty for a kind nobody has done', async () => {
 		expect(await over([call('all', taras)], (sql) => tallies(sql, 'pass'))).toEqual([]);
 	});

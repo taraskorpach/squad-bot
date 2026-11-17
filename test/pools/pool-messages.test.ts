@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
 	argsErrorText,
-	cardLink,
 	closedByAuthorText,
 	drawRefusalToast,
 	drawText,
@@ -59,12 +58,6 @@ describe('drawRefusalToast', () => {
 		['bench-empty', 'Лава порожня — жереб не потрібен'],
 	] as const)('answers %s with its toast', (refusal, toast) => {
 		expect(drawRefusalToast(refusal)).toBe(toast);
-	});
-});
-
-describe('cardLink', () => {
-	it("links to a supergroup's message by the chat id without its -100", () => {
-		expect(cardLink(-1001234567890, 42)).toBe('https://t.me/c/1234567890/42');
 	});
 });
 

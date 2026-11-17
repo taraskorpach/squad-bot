@@ -7,6 +7,7 @@ import {
 	isAdmin,
 	isGroup,
 	isInChat,
+	messageLink,
 	personSending,
 	replyingTo,
 	sentAt,
@@ -189,5 +190,11 @@ describe('replyingTo', () => {
 describe('sentAt', () => {
 	it('is when Telegram says the message was sent, in epoch milliseconds', () => {
 		expect(sentAt({ date: 1_794_860_000 })).toBe(1_794_860_000_000);
+	});
+});
+
+describe('messageLink', () => {
+	it("links to a supergroup's message by the chat id without its -100", () => {
+		expect(messageLink(-1001234567890, 42)).toBe('https://t.me/c/1234567890/42');
 	});
 });

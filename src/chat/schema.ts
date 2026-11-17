@@ -121,6 +121,17 @@ export const MIGRATIONS: readonly Migration[] = [
 			ALTER TABLE answers_v5 RENAME TO answers;
 		`,
 	},
+	{
+		id: 6,
+		description: 'an event says what it is about and which message made it: a shared post',
+		// NULL for every kind but a share, as pool_id is outside pools. The index serves the board's
+		// count of each post once per person, and the баян's lookup of a post's first share.
+		sql: `
+			ALTER TABLE events ADD COLUMN ref        TEXT;
+			ALTER TABLE events ADD COLUMN message_id INTEGER;
+			CREATE INDEX idx_events_kind_ref ON events (kind, ref);
+		`,
+	},
 ];
 
 /** Each migration commits with its own row, so one that fails halfway leaves nothing behind. */
